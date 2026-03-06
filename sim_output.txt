@@ -1,0 +1,10 @@
+2026-03-06 21:42:18,021 [INFO] simulation.engine: Loaded scenario 'safe_flyby' with 1 debris object(s), 300 frames.
+2026-03-06 21:42:37,095 [WARNING] ingestion.redis_client: Redis health check failed – server unreachable
+2026-03-06 21:42:37,095 [INFO] simulation.engine: Redis unavailable – running without stream publishing.
+2026-03-06 21:42:37,095 [INFO] __main__: Starting simulation: scenario='safe_flyby', frames=2, redis=False
+2026-03-06 21:42:37,095 [INFO] simulation.engine: Starting simulation run: scenario='safe_flyby', frames=2, fps=10.0
+2026-03-06 21:42:37,109 [INFO] __main__: Frame 1/2  frame_id=frame_000000_9d1073f6  pos=(6771.0, 0.8, 0.0) km
+2026-03-06 21:42:37,420 [WARNING] __main__: Ingestion API push failed: [WinError 10053] An established connection was aborted by the software in your host machine
+2026-03-06 21:42:37,639 [WARNING] __main__: Ingestion API push failed: Server disconnected without sending a response.
+2026-03-06 21:42:37,639 [INFO] simulation.engine: Simulation run complete: 2 frames generated.
+2026-03-06 21:42:37,639 [INFO] __main__: Done.

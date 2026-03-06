@@ -17,4 +17,6 @@ COPY . .
 
 EXPOSE 8000
 
+ENV PYTHONPATH=/app
+
 CMD ["uvicorn", "ingestion.api:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -55,7 +55,7 @@ class ProcessingWorker:
         while True:
             frame_data: ImageFrame = self.queue_manager.dequeue()
             if frame_data:
-                await self._process_single_frame(frame_data)
+                await asyncio.to_thread(self._process_single_frame, frame_data)
             await asyncio.sleep(0.01)
 
     def cache_telemetry(self, packet: TelemetryPacket):
@@ -66,7 +66,7 @@ class ProcessingWorker:
             oldest = min(self._telemetry_cache.keys())
             del self._telemetry_cache[oldest]
 
-    async def _process_single_frame(self, frame_data: ImageFrame):
+    def _process_single_frame(self, frame_data: ImageFrame):
         """Process a frame through vision and prediction."""
         try:
             # 1. Decode

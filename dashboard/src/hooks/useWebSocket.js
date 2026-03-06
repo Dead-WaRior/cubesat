@@ -48,10 +48,10 @@ function useWebSocket() {
   const connect = useCallback(() => {
     if (!isMountedRef.current) return
 
-    // Use location.host which includes the port (e.g. localhost:3000)
-    // The Vite proxy in vite.config.js will redirect /ws/live to localhost:8000
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const url = `${protocol}//${window.location.host}${WS_URL}`
+    // Connect directly to the FastAPI backend instead of relying on the proxy.
+    // Use localhost explicitly so the browser resolves it on the host machine,
+    // avoiding Docker's internal bridge IPs.
+    const url = `ws://localhost:8000/ws/live`
 
     const ws = new WebSocket(url)
     wsRef.current = ws
