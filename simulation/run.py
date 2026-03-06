@@ -59,7 +59,7 @@ def _parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     parser.add_argument(
         "--api-url",
         dest="api_url",
-        default="http://127.0.0.1:8000",
+        default="http://localhost:8000",
         help="URL of the ingestion API to push frames to.",
     )
     return parser.parse_args(argv)

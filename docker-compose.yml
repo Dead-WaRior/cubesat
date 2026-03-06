@@ -40,7 +40,7 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-    command: python simulation/run.py --scenario safe_flyby --api-url http://backend:8000
+    command: python simulation/run.py --scenario safe_flyby --redis
 
   dashboard:
     build:

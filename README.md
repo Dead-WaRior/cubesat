@@ -7,10 +7,10 @@ A ground-based software platform that processes satellite camera imagery and tel
 | Layer | Name | Responsibility | Technology |
 |-------|------|----------------|-----------|
 | 1 | Simulation Engine | Synthetic orbital imagery and debris movement | Python, OpenCV, NumPy |
-| 2 | Data Ingestion | Receives frames & telemetry, queues for processing | FastAPI, Redis |
+| 2 | Data Ingestion | Receives frames & telemetry, queues for processing, persists tracks & alerts | FastAPI, Redis, SQLite |
 | 3 | Vision & Tracking | Detects debris, tracks across time with object IDs | OpenCV, YOLOv8-nano, SORT |
-| 4 | Prediction & Risk | Predicts trajectories, computes Probability of Collision | NumPy, SciPy, filterpy UKF |
-| 5 | Dashboard & Alerts | Real-time display, risk scores, operator alerts | React, WebSocket, Recharts |
+| 4 | Prediction & Risk | Predicts trajectories, computes Pc, plans avoidance maneuvers | NumPy, SciPy, filterpy UKF, astropy |
+| 5 | Dashboard & Alerts | Real-time 3D orbital display, risk scores, ground track, operator alerts | React, Three.js, WebSocket, Recharts |
 
 **Data Flow:** `Simulation → Redis Queue → Detector → Tracker → Predictor → Risk Scorer → Dashboard`
 
@@ -33,7 +33,9 @@ cubesat/
 ├── ingestion/               # Layer 2: Data Ingestion
 │   ├── api.py               # FastAPI app (/health, /ws/live, REST endpoints)
 │   ├── redis_client.py      # Redis stream producer/consumer
-│   └── queue_manager.py     # Frame-drop policy (max 30 frames)
+│   ├── queue_manager.py     # Frame-drop policy (max 30 frames)
+│   ├── database.py          # SQLite persistence layer (tracks & alerts)
+│   └── worker.py            # Async processing worker (vision → prediction loop)
 ├── vision/                  # Layer 3: Detection & Tracking
 │   ├── preprocessing.py     # Dark subtraction, CLAHE, hot-pixel correction
 │   ├── streak_detector.py   # Canny + Hough Line streak detection
@@ -49,6 +51,7 @@ cubesat/
 │   ├── closest_approach.py      # TCA computation
 │   ├── collision_probability.py # Alfriend-Akella Pc calculation
 │   ├── risk_assessor.py         # ADVISORY/WARNING/CRITICAL tier classification
+│   ├── maneuver_planner.py      # Impulsive burn planner for collision avoidance
 │   └── pipeline.py              # Full prediction pipeline orchestrator
 ├── dashboard/               # Layer 5: React Frontend
 │   ├── src/
@@ -56,13 +59,18 @@ cubesat/
 │   │   ├── store.js         # Zustand state management
 │   │   ├── hooks/useWebSocket.js
 │   │   └── components/
-│   │       ├── LiveFeed.jsx
-│   │       ├── TracksTable.jsx
-│   │       ├── RiskTimeline.jsx
-│   │       ├── AlertFeed.jsx
-│   │       ├── ManeuverPanel.jsx
-│   │       ├── SystemHealth.jsx
-│   │       └── CriticalModal.jsx
+│   │       ├── LiveFeed.jsx          # Live camera feed with overlay
+│   │       ├── OrbitalView.jsx       # 3D orbital scene (Three.js / R3F)
+│   │       ├── GroundTrack.jsx       # 2D sub-satellite point on world map
+│   │       ├── TracksTable.jsx       # Active debris tracks table
+│   │       ├── ObjectInspector.jsx   # Sliding sidebar for track deep-dive
+│   │       ├── RiskAnalytics.jsx     # Pc history chart for selected track
+│   │       ├── RiskTimeline.jsx      # Timeline of risk alert events
+│   │       ├── AlertFeed.jsx         # Live alert feed
+│   │       ├── ManeuverPanel.jsx     # Recommended avoidance maneuver display
+│   │       ├── SystemHealth.jsx      # Subsystem health indicators
+│   │       ├── SystemMetricsHUD.jsx  # Top-level mission statistics HUD
+│   │       └── CriticalModal.jsx     # Full-screen critical alert overlay
 │   ├── package.json
 │   └── Dockerfile
 ├── shared/                  # Pydantic data schemas
@@ -72,6 +80,7 @@ cubesat/
 ├── docker-compose.yml
 ├── Dockerfile
 ├── Makefile
+├── cubesat.db               # SQLite database (auto-created at runtime)
 └── requirements.txt
 ```
 
@@ -82,7 +91,7 @@ cubesat/
 - Python 3.11+
 - Node.js 20+
 
-### Run with Docker Compose
+### Run with Docker Compose mac/linux
 
 ```bash
 # Start all services
@@ -201,6 +210,12 @@ ruff check . --exclude dashboard
 
 5. **SORT tracking**: Multi-object tracking requires 4+ consecutive frame confirmations before promoting a track to "active" to suppress false positives.
 
+6. **Impulsive maneuver planner**: When a CRITICAL alert fires, `maneuver_planner.py` evaluates candidate in-track and radial burns at a configurable lead time before TCA and recommends the minimum delta-v burn that achieves the target miss distance.
+
+7. **SQLite persistence**: `database.py` provides a lightweight persistence layer for tracks and alerts so that history survives backend restarts without requiring a separate database service.
+
+8. **3D orbital visualisation**: `OrbitalView.jsx` uses React Three Fiber and Three.js to render a real-time 3D scene with the satellite globe, debris objects, and predicted trajectory paths.
+
 ## Dependencies
 
 ### Python Backend
@@ -208,12 +223,14 @@ ruff check . --exclude dashboard
 - `opencv-python-headless` — Image processing
 - `filterpy` — Kalman and Unscented Kalman filters
 - `numpy` + `scipy` — Scientific computing
-- `pydantic` — Data validation and schemas
+- `astropy` — Coordinate transforms and orbital mechanics
+- `pydantic` + `pydantic-settings` — Data validation and schemas
 - `redis` — Stream-based message queue
 - `ultralytics` — YOLOv8 (optional, blob detection fallback available)
 
 ### React Frontend
 - `react` 18 + `vite` — UI framework and build tool
+- `three` + `@react-three/fiber` + `@react-three/drei` — 3D orbital visualisation
 - `recharts` — Time-series charts for Pc history
 - `zustand` — Lightweight state management
 - `tailwindcss` — Utility-first styling
