@@ -91,7 +91,7 @@ cubesat/
 - Python 3.11+
 - Node.js 20+
 
-### Run with Docker Compose
+### Run with Docker Compose mac/linux
 
 ```bash
 # Start all services
