@@ -1,0 +1,26 @@
+# YOLOv8 training configuration for debris detection
+task: detect
+mode: train
+model: yolov8n.pt
+data: debris_dataset.yaml
+epochs: 100
+batch: 16
+imgsz: 640
+device: cpu
+workers: 4
+project: runs/detect
+name: debris_detector
+patience: 20
+save: true
+cache: false
+
+# Augmentation
+hsv_h: 0.0   # No hue shift (grayscale)
+hsv_s: 0.0   # No saturation shift
+hsv_v: 0.4   # Value variation
+degrees: 10.0
+translate: 0.1
+scale: 0.3
+flipud: 0.5
+fliplr: 0.5
+mosaic: 0.5
