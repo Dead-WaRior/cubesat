@@ -136,7 +136,8 @@ function useWebSocket() {
       }
       setConnected(false)
     }
-    // connect is stable; store actions never change reference identity
+    // connect is wrapped in useCallback so it has a stable reference;
+    // the empty array is intentional — we only want to open the socket once.
   }, [])
 
   return { isConnected }
