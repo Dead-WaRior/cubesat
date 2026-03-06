@@ -1,0 +1,13 @@
+dashboard/node_modules
+dashboard/dist
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+.env
+*.log
+/tmp/

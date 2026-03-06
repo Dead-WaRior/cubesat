@@ -1,0 +1,30 @@
+name: close_approach
+description: "Debris closes from 15km to 2km over 8 minutes"
+frame_rate: 10.0
+duration_frames: 4800
+width: 640
+height: 480
+noise:
+  gaussian_sigma: 2.0
+  hot_pixel_density: 0.002
+  cosmic_ray_probability: 0.02
+debris:
+  - id: 1
+    x: 100.0
+    y: 200.0
+    vx: 1.5
+    vy: 0.8
+    size: 3.0
+    brightness: 200
+    type: streak
+    range_km: 15.0
+    range_rate: -0.05  # km/s approaching
+  - id: 2
+    x: 500.0
+    y: 300.0
+    vx: -0.8
+    vy: 0.5
+    size: 2.0
+    brightness: 160
+    type: point
+    range_km: 20.0

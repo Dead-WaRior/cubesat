@@ -1,0 +1,20 @@
+name: safe_flyby
+description: "Debris passes at safe distance >20km, no collision risk"
+frame_rate: 10.0
+duration_frames: 300
+width: 640
+height: 480
+noise:
+  gaussian_sigma: 2.0
+  hot_pixel_density: 0.001
+  cosmic_ray_probability: 0.01
+debris:
+  - id: 1
+    x: 50.0
+    y: 240.0
+    vx: 2.5
+    vy: 0.3
+    size: 2.0
+    brightness: 180
+    type: streak
+    range_km: 25.0
