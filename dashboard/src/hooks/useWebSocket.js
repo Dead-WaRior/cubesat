@@ -40,12 +40,16 @@ function useWebSocket() {
   const setConnected = useDashboardStore((s) => s.setConnected)
   const updatePcHistory = useDashboardStore((s) => s.updatePcHistory)
   const setLastUpdate = useDashboardStore((s) => s.setLastUpdate)
+  const setSatLla = useDashboardStore((s) => s.setSatLla)
+  const setSatPath = useDashboardStore((s) => s.setSatPath)
+  const setSatBusStats = useDashboardStore((s) => s.setSatBusStats)
   const isConnected = useDashboardStore((s) => s.isConnected)
 
   const connect = useCallback(() => {
     if (!isMountedRef.current) return
 
-    // Build an absolute ws(s):// URL so it works outside the Vite proxy too
+    // Use location.host which includes the port (e.g. localhost:3000)
+    // The Vite proxy in vite.config.js will redirect /ws/live to localhost:8000
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const url = `${protocol}//${window.location.host}${WS_URL}`
 
@@ -110,6 +114,18 @@ function useWebSocket() {
       if (data.timestamp) {
         setLastUpdate(data.timestamp)
       }
+
+      if (data.sat_lla) {
+        setSatLla(data.sat_lla)
+      }
+
+      if (data.sat_path) {
+        setSatPath(data.sat_path)
+      }
+
+      if (data.sat_bus_stats) {
+        setSatBusStats(data.sat_bus_stats)
+      }
     }
   }, [
     setFrame,
@@ -120,6 +136,9 @@ function useWebSocket() {
     setConnected,
     updatePcHistory,
     setLastUpdate,
+    setSatLla,
+    setSatPath,
+    setSatBusStats,
   ])
 
   useEffect(() => {

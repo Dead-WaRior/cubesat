@@ -15,7 +15,7 @@ function rowBg(alertLevel) {
     case 'advisory':
       return 'bg-yellow-950/40 hover:bg-yellow-950/60'
     default:
-      return 'hover:bg-gray-800/50'
+      return 'hover:bg-blue-500/10 cursor-pointer transition-all border-l-2 border-transparent'
   }
 }
 
@@ -55,10 +55,14 @@ function formatPc(pc) {
  * colour-coded rows indicating their alert severity.
  */
 function TracksTable() {
-  const tracks = useDashboardStore((s) => s.tracks)
+  const { tracks, selectedTrackId, setSelectedTrackId } = useDashboardStore((s) => ({
+    tracks: s.tracks,
+    selectedTrackId: s.selectedTrackId,
+    setSelectedTrackId: s.setSelectedTrackId
+  }))
 
   return (
-    <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden">
+    <div className="glass-card rounded-xl overflow-hidden shadow-lg">
       <div className="px-4 py-3 border-b border-gray-700">
         <h2 className="text-sm font-semibold text-gray-200 tracking-wide uppercase">
           Active Debris Tracks
@@ -88,7 +92,15 @@ function TracksTable() {
             </thead>
             <tbody className="divide-y divide-gray-800">
               {tracks.map((track) => (
-                <tr key={track.track_id} className={`transition-colors ${rowBg(track.alert_level)}`}>
+                <tr 
+                  key={track.track_id} 
+                  onClick={() => setSelectedTrackId(track.track_id)}
+                  className={`${rowBg(track.alert_level)} ${
+                    String(selectedTrackId) === String(track.track_id) 
+                    ? 'bg-blue-500/20 border-l-blue-400' 
+                    : ''
+                  }`}
+                >
                   <td className="px-3 py-2 font-mono text-gray-300">{track.track_id}</td>
                   <td className="px-3 py-2 font-mono text-gray-300">
                     ({typeof track.x === 'number' ? track.x.toFixed(3) : '—'},&nbsp;

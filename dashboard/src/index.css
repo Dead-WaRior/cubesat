@@ -2,24 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  box-sizing: border-box;
+@layer base {
+  :root {
+    --glass-bg: rgba(15, 23, 42, 0.65);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-border-bright: rgba(255, 255, 255, 0.15);
+    --accent-blue: #3b82f6;
+    --accent-blue-glow: rgba(59, 130, 246, 0.4);
+    --accent-red: #ef4444;
+    --accent-red-glow: rgba(239, 68, 68, 0.4);
+  }
+
+  body {
+    @apply m-0 font-sans text-gray-100;
+    background: radial-gradient(circle at top left, #0f172a 0%, #020617 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
 }
 
-body {
-  margin: 0;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #030712;
-  color: #f9fafb;
+@layer components {
+  .glass-card {
+    @apply backdrop-blur-xl border bg-slate-900/60 transition-all duration-300;
+    border-color: var(--glass-border);
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  .glass-card:hover {
+    border-color: var(--glass-border-bright);
+    box-shadow:
+      0 10px 15px -3px rgba(0, 0, 0, 0.1),
+      0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  .glass-header {
+    @apply px-4 py-3 border-b uppercase flex justify-between items-center bg-white/5;
+    border-color: var(--glass-border);
+  }
+
+  .glow-blue {
+    box-shadow: 0 0 15px var(--accent-blue-glow);
+  }
+
+  .glow-red {
+    box-shadow: 0 0 20px var(--accent-red-glow);
+  }
+
+  .mesh-gradient {
+    background-image:
+      radial-gradient(at 0% 0%, hsla(217, 91%, 60%, 0.1) 0, transparent 50%),
+      radial-gradient(at 50% 0%, hsla(224, 71%, 45%, 0.1) 0, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(199, 89%, 48%, 0.1) 0, transparent 50%);
+  }
+
+  .cyber-grid {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
 }
 
 .scrollbar-thin::-webkit-scrollbar {
   width: 4px;
 }
 .scrollbar-thin::-webkit-scrollbar-track {
-  background: #1f2937;
+  background: transparent;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #4b5563;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 2px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }

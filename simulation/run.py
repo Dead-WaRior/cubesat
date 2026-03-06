@@ -10,6 +10,7 @@ from typing import Optional
 
 
 from simulation.engine import SimulationEngine
+import httpx
 
 logging.basicConfig(
     level=logging.INFO,
@@ -54,6 +55,12 @@ def _parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
         action="store_true",
         default=False,
         help="Push generated frames to the Redis stream.",
+    )
+    parser.add_argument(
+        "--api-url",
+        dest="api_url",
+        default="http://localhost:8000",
+        help="URL of the ingestion API to push frames to.",
     )
     return parser.parse_args(argv)
 
@@ -101,6 +108,14 @@ def main(argv: Optional[list[str]] = None) -> None:
             png_bytes = base64.b64decode(image_frame.image_data)
             frame_path = output_dir / f"frame_{idx:06d}.png"
             frame_path.write_bytes(png_bytes)
+
+        if args.api_url:
+            try:
+                with httpx.Client(timeout=2.0) as client:
+                    client.post(f"{args.api_url}/frames", json=image_frame.model_dump(mode='json'))
+                    client.post(f"{args.api_url}/telemetry", json=telemetry.model_dump(mode='json'))
+            except Exception as exc:
+                logger.warning("Ingestion API push failed: %s", exc)
 
     logger.info("Done.")
 

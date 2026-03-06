@@ -33,8 +33,28 @@ function buildRecommendations(alert) {
 function ManeuverPanel() {
   const alerts = useDashboardStore((s) => s.alerts)
   const acknowledgeAlert = useDashboardStore((s) => s.acknowledgeAlert)
+  const isSimulating = useDashboardStore((s) => s.isSimulating)
+  const setIsSimulating = useDashboardStore((s) => s.setIsSimulating)
+  const setHypotheticalPath = useDashboardStore((s) => s.setHypotheticalPath)
+  const satPath = useDashboardStore((s) => s.satPath)
 
   const [dismissed, setDismissed] = useState(false)
+
+  const toggleSimulation = () => {
+    if (!isSimulating) {
+        // Calculate a hypothetical "safe" path
+        // For simulation, we take the current satellite path and add a 5% radial boost
+        const safetyPath = satPath.map(p => ({
+            x: p.x * 1.05,
+            y: p.y * 1.05,
+            z: p.z * 1.05
+        }));
+        setHypotheticalPath(safetyPath);
+        setIsSimulating(true);
+    } else {
+        setIsSimulating(false);
+    }
+  };
 
   // Find the most severe unacknowledged actionable alert
   const urgentAlert = alerts
@@ -53,12 +73,12 @@ function ManeuverPanel() {
 
   if (!urgentAlert || dismissed) {
     return (
-      <div className="bg-gray-900 rounded-xl border border-gray-700 px-4 py-4">
+      <div className="glass-card rounded-xl px-4 py-4 shadow-lg">
         <h2 className="text-sm font-semibold text-gray-200 tracking-wide uppercase mb-2">
           Maneuver Recommendation
         </h2>
-        <div className="flex items-center gap-2 text-green-400 text-sm">
-          <span className="text-green-500 text-lg">✓</span>
+        <div className="flex items-center gap-2 text-blue-400 text-sm">
+          <span className="text-blue-500 text-lg">✓</span>
           No maneuver required — system nominal
         </div>
       </div>
@@ -124,18 +144,30 @@ function ManeuverPanel() {
       )}
 
       {/* Action buttons */}
-      <div className="px-4 py-3 border-t border-gray-700 flex gap-2">
+      <div className="px-4 py-3 border-t border-gray-700 flex flex-col gap-2">
+        <div className="flex gap-2">
+            <button
+              onClick={() => acknowledgeAlert(urgentAlert.alert_id)}
+              className="flex-1 bg-green-600 hover:bg-green-500 active:bg-green-700 text-white text-xs font-semibold py-1.5 px-3 rounded transition-colors"
+            >
+              Approve Maneuver
+            </button>
+            <button
+              onClick={() => setDismissed(true)}
+              className="flex-1 bg-gray-700 hover:bg-gray-600 active:bg-gray-800 text-gray-200 text-xs font-semibold py-1.5 px-3 rounded transition-colors"
+            >
+              Dismiss
+            </button>
+        </div>
         <button
-          onClick={() => acknowledgeAlert(urgentAlert.alert_id)}
-          className="flex-1 bg-green-600 hover:bg-green-500 active:bg-green-700 text-white text-xs font-semibold py-1.5 px-3 rounded transition-colors"
+          onClick={toggleSimulation}
+          className={`w-full text-xs font-black uppercase py-2 rounded border transition-all ${
+              isSimulating 
+              ? 'bg-blue-600/20 border-blue-500 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.3)]' 
+              : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
+          }`}
         >
-          Approve Maneuver
-        </button>
-        <button
-          onClick={() => setDismissed(true)}
-          className="flex-1 bg-gray-700 hover:bg-gray-600 active:bg-gray-800 text-gray-200 text-xs font-semibold py-1.5 px-3 rounded transition-colors"
-        >
-          Dismiss
+          {isSimulating ? '⚡ SIMULATION ACTIVE' : '🔭 SIMULATE SAFETY PATH'}
         </button>
       </div>
     </div>

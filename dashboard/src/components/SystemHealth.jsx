@@ -103,8 +103,8 @@ function SystemHealth() {
   ]
 
   return (
-    <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-700">
+    <div className="glass-card rounded-xl overflow-hidden shadow-lg">
+      <div className="glass-header">
         <h2 className="text-sm font-semibold text-gray-200 tracking-wide uppercase">
           System Health
         </h2>
@@ -113,6 +113,47 @@ function SystemHealth() {
         {layers.map(({ label, status }) => (
           <StatusRow key={label} label={label} status={status} />
         ))}
+      </div>
+
+      <div className="glass-header border-t border-white/5 mt-2">
+        <h2 className="text-[10px] font-black text-gray-500 tracking-wider uppercase">
+          Satellite Bus Telemetry
+        </h2>
+      </div>
+      
+      <div className="px-4 py-3 space-y-3">
+          <div className="flex justify-between items-end">
+              <span className="text-[10px] text-gray-400 uppercase font-bold">Bus Voltage</span>
+              <span className="text-xs font-mono text-blue-400">{useDashboardStore.getState().satBusStats.battery_v} V</span>
+          </div>
+          <div className="w-full bg-black/40 h-1 rounded-full overflow-hidden">
+              <div 
+                className="bg-blue-500 h-full shadow-[0_0_8px_#3b82f6]" 
+                style={{ width: `${(useDashboardStore.getState().satBusStats.battery_v / 14) * 100}%` }} 
+              />
+          </div>
+
+          <div className="flex justify-between items-end mt-1">
+              <span className="text-[10px] text-gray-400 uppercase font-bold">CPU Temp</span>
+              <span className={`text-xs font-mono ${useDashboardStore.getState().satBusStats.cpu_temp > 50 ? 'text-orange-400' : 'text-green-400'}`}>
+                  {useDashboardStore.getState().satBusStats.cpu_temp}°C
+              </span>
+          </div>
+
+          <div className="flex justify-between items-end mt-1">
+              <span className="text-[10px] text-gray-400 uppercase font-bold">Wheel Speed</span>
+              <span className="text-xs font-mono text-gray-300">{useDashboardStore.getState().satBusStats.wheel_rpm} RPM</span>
+          </div>
+
+          <div className="flex justify-between items-end mt-1">
+              <span className="text-[10px] text-gray-400 uppercase font-bold">System Load</span>
+              <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-blue-500">{useDashboardStore.getState().satBusStats.load_pct}%</span>
+                  <div className="w-12 bg-black/40 h-1 rounded-full overflow-hidden">
+                      <div className="bg-blue-400 h-full" style={{ width: `${useDashboardStore.getState().satBusStats.load_pct}%` }} />
+                  </div>
+              </div>
+          </div>
       </div>
     </div>
   )

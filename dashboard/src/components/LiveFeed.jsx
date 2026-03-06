@@ -24,9 +24,9 @@ function LiveFeed() {
   const isConnected = useDashboardStore((s) => s.isConnected)
 
   return (
-    <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden">
+    <div className="glass-card rounded-xl overflow-hidden shadow-lg">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
+      <div className="glass-header">
         <h2 className="text-sm font-semibold text-gray-200 tracking-wide uppercase">
           Live Camera Feed
         </h2>

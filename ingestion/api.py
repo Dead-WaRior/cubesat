@@ -14,7 +14,14 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from ingestion.queue_manager import QueueManager
-from shared.schemas import ImageFrame, TelemetryPacket
+from ingestion.database import CubeSatDatabase
+from ingestion.worker import ProcessingWorker
+from shared.schemas import ImageFrame, TelemetryPacket, RiskAlert, TrackObject
+from vision.pipeline import VisionPipeline
+from prediction.pipeline import PredictionPipeline
+import base64
+import cv2
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -38,12 +45,18 @@ app.add_middleware(
 )
 
 # ---------------------------------------------------------------------------
-# Global state
+# Global state & Worker
 # ---------------------------------------------------------------------------
 
 queue_manager: QueueManager = QueueManager()
-recent_alerts: list[dict[str, Any]] = []
-active_tracks: list[dict[str, Any]] = []
+db = CubeSatDatabase()
+
+worker = ProcessingWorker(
+    queue_manager=queue_manager,
+    db=db,
+    vision_pipeline=VisionPipeline(),
+    prediction_pipeline=PredictionPipeline()
+)
 
 # ---------------------------------------------------------------------------
 # Routes
@@ -77,42 +90,30 @@ async def ingest_frame(frame: ImageFrame) -> dict[str, Any]:
 
 @app.post("/telemetry", summary="Ingest a telemetry packet")
 async def ingest_telemetry(packet: TelemetryPacket) -> dict[str, Any]:
-    """Accept a :class:`~shared.schemas.TelemetryPacket`.
-
-    The telemetry packet is logged and acknowledged.  Downstream consumers
-    retrieve it via the Redis stream populated by the simulation service.
-
-    Args:
-        packet: The telemetry snapshot.
-
-    Returns:
-        A JSON object with the associated ``frame_id`` and a ``received`` flag.
-    """
+    worker.cache_telemetry(packet)
     logger.info("Received telemetry for frame %s", packet.frame_id)
     return {"frame_id": packet.frame_id, "received": True}
 
 
 @app.get("/tracks", summary="List active tracks")
 async def get_tracks() -> list[dict[str, Any]]:
-    """Return all currently active object tracks.
-
-    Returns:
-        A list of serialised :class:`~shared.schemas.TrackObject` dicts.
-        Empty when no tracks are available.
-    """
-    return active_tracks
+    """Return all currently active object tracks."""
+    return db.get_active_tracks()
 
 
 @app.get("/alerts", summary="List recent risk alerts")
 async def get_alerts() -> list[dict[str, Any]]:
-    """Return recently generated collision risk alerts.
+    """Return recently generated collision risk alerts."""
+    return db.get_recent_alerts()
 
-    Returns:
-        A list of serialised :class:`~shared.schemas.RiskAlert` dicts.
-        Empty when no alerts have been raised.
-    """
-    return recent_alerts
 
+# ---------------------------------------------------------------------------
+# Background Processing
+# ---------------------------------------------------------------------------
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(worker.run_forever())
 
 # ---------------------------------------------------------------------------
 # WebSocket
@@ -136,9 +137,12 @@ async def websocket_live(websocket: WebSocket) -> None:
     try:
         while True:
             payload: dict[str, Any] = {
-                "frame": None,
-                "tracks": active_tracks,
-                "alerts": recent_alerts,
+                "frame": worker.latest_frame_processed,
+                "tracks": worker.active_tracks,
+                "alerts": [a.model_dump() for a in worker.recent_alerts],
+                "sat_lla": getattr(worker, 'sat_lla', None),
+                "sat_path": getattr(worker, 'sat_path', []),
+                "sat_bus_stats": getattr(worker, 'sat_bus_stats', {}),
                 "system_health": {
                     "simulation": "ok",
                     "ingestion": "ok",

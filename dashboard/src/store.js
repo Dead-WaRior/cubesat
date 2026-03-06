@@ -50,6 +50,8 @@ import { create } from 'zustand'
  * @property {SystemHealth} systemHealth - Health of each subsystem
  * @property {boolean} isConnected - Whether the WebSocket is connected
  * @property {Object.<string, PcDataPoint[]>} pcHistory - Per-track Pc history (last 30 s)
+ * @property {string|null} selectedTrackId - ID of the currently selected track for inspection
+ * @property {Object|null} satLla - Current satellite latitude/longitude {lat, lon, alt}
  * @property {string|null} lastUpdate - ISO timestamp of the most recent message
  */
 
@@ -85,6 +87,29 @@ const useDashboardStore = create((set) => ({
 
   /** @type {string|null} */
   lastUpdate: null,
+
+  /** @type {string|null} */
+  selectedTrackId: null,
+
+  /** @type {Object|null} */
+  satLla: null,
+
+  /** @type {Array<{x: number, y: number, z: number}>} */
+  satPath: [],
+
+  /** @type {Object} */
+  satBusStats: {
+    battery_v: 12.4,
+    cpu_temp: 42.0,
+    wheel_rpm: 1200,
+    load_pct: 25.0,
+  },
+
+  /** @type {boolean} */
+  isSimulating: false,
+
+  /** @type {Array} */
+  hypotheticalPath: [],
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
@@ -163,6 +188,42 @@ const useDashboardStore = create((set) => ({
    * @param {string} ts
    */
   setLastUpdate: (ts) => set({ lastUpdate: ts }),
+
+  /**
+   * Select a track for detailed inspection.
+   * @param {string|null} trackId
+   */
+  setSelectedTrackId: (trackId) => set({ selectedTrackId: trackId }),
+
+  /**
+   * Update current satellite LLA coordinates.
+   * @param {Object|null} lla
+   */
+  setSatLla: (lla) => set({ satLla: lla }),
+
+  /**
+   * Update satellite predicted trajectory path.
+   * @param {Array} path
+   */
+  setSatPath: (path) => set({ satPath: path }),
+
+  /**
+   * Update satellite engineering bus metrics.
+   * @param {Object} stats
+   */
+  setSatBusStats: (stats) => set({ satBusStats: stats }),
+
+  /**
+   * Toggle hypothetical maneuver simulation mode.
+   * @param {boolean} active
+   */
+  setIsSimulating: (active) => set({ isSimulating: active }),
+
+  /**
+   * Update the hypothetical (safety) trajectory path.
+   * @param {Array} path
+   */
+  setHypotheticalPath: (path) => set({ hypotheticalPath: path }),
 }))
 
 export default useDashboardStore

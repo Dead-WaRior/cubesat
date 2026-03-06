@@ -11,6 +11,7 @@ from prediction.ukf_tracker import UKFTracker
 from prediction.closest_approach import ClosestApproachCalculator
 from prediction.collision_probability import CollisionProbabilityCalculator
 from prediction.risk_assessor import RiskAssessor
+from prediction.maneuver_planner import ManeuverPlanner
 from shared.schemas import RiskAlert, TelemetryPacket
 
 # Default slant-range assumption when no independent range measurement is
@@ -40,6 +41,7 @@ class PredictionPipeline:
         self._tca_calculator = ClosestApproachCalculator()
         self._pc_calculator = CollisionProbabilityCalculator()
         self._risk_assessor = RiskAssessor()
+        self._maneuver_planner = ManeuverPlanner()
 
     # ------------------------------------------------------------------
     # Public API
@@ -123,6 +125,13 @@ class PredictionPipeline:
             # Risk assessment
             alert = self._risk_assessor.assess(track_id, pc, miss_km, tca_s)
             if alert is not None:
+                # Try to plan avoidance if risk is high
+                if tca_s < 3600: # plan if TCA within 1 hour
+                    maneuver = self._maneuver_planner.plan_avoidance(
+                        sat_state, debris_state, tca_s
+                    )
+                    if maneuver:
+                        alert.recommended_action += f" | {maneuver['direction'].upper()} burn: {maneuver['delta_v_ms']} m/s"
                 alerts.append(alert)
 
         return alerts
@@ -132,18 +141,46 @@ class PredictionPipeline:
         track_id: int,
         seconds_forward: float = 600.0,
     ) -> Optional[np.ndarray]:
-        """Return the predicted state for a tracked object at a future time.
-
-        Args:
-            track_id: Identifier of the track to predict.
-            seconds_forward: Number of seconds ahead to propagate.
-
-        Returns:
-            Predicted state vector ``[x, y, z, vx, vy, vz]``, shape ``(6,)``,
-            or ``None`` if the track is not known to this pipeline instance.
-        """
+        """Return the predicted state for a tracked object at a future time."""
         tracker = self._trackers.get(track_id)
         if tracker is None:
             return None
         predicted_state, _ = tracker.propagate_forward(seconds_forward)
         return predicted_state
+
+    def get_prediction_path(
+        self,
+        track_id: int,
+        duration: float = 300.0,
+        steps: int = 10,
+    ) -> Optional[list[dict[str, float]]]:
+        """Return a series of predicted positions for a track identifier."""
+        tracker = self._trackers.get(track_id)
+        if tracker is None:
+            return None
+        
+        path = []
+        dt = duration / (steps - 1)
+        for i in range(steps):
+            t = i * dt
+            state, _ = tracker.propagate_forward(t)
+            path.append({"x": float(state[0]), "y": float(state[1]), "z": float(state[2])})
+        return path
+
+    def get_sat_prediction_path(
+        self,
+        sat_state: np.ndarray,
+        duration: float = 300.0,
+        steps: int = 10,
+    ) -> list[dict[str, float]]:
+        """Return a series of predicted positions for the satellite itself."""
+        from prediction.orbital_dynamics import propagate_state
+        path = []
+        dt = duration / (steps - 1)
+        current = sat_state.copy()
+        for i in range(steps):
+            t = i * dt
+            # Propagate from original state to current offset
+            state = propagate_state(sat_state, t)
+            path.append({"x": float(state[0]), "y": float(state[1]), "z": float(state[2])})
+        return path

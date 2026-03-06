@@ -66,8 +66,8 @@ function AlertFeed() {
   const sorted = [...alerts].reverse()
 
   return (
-    <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden flex flex-col">
-      <div className="px-4 py-3 border-b border-gray-700 flex-shrink-0">
+    <div className="glass-card rounded-xl overflow-hidden flex flex-col h-full shadow-lg">
+      <div className="glass-header">
         <h2 className="text-sm font-semibold text-gray-200 tracking-wide uppercase">
           Alert Feed
           <span className="ml-2 text-xs font-normal text-gray-400">
