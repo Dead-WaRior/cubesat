@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from prediction.risk_assessor import RiskAssessor
 from shared.schemas import AlertLevel

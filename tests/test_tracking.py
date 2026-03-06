@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from vision.sort_tracker import KalmanBoxTracker, SORTTracker
 

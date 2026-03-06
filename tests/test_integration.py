@@ -6,7 +6,6 @@ import json
 from datetime import datetime, timezone
 
 import numpy as np
-import pytest
 from fastapi.testclient import TestClient
 
 from ingestion.api import app

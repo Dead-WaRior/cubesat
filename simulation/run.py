@@ -8,7 +8,6 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-import cv2
 
 from simulation.engine import SimulationEngine
 

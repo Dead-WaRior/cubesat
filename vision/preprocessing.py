@@ -134,10 +134,8 @@ class ImagePreprocessor:
     ) -> np.ndarray:
         """Hot-pixel correction for a single 2-D channel."""
         hot_mask = channel > threshold
-        # Dilate the mask to find pixels neighbouring a hot pixel
-        kernel = np.ones((3, 3), np.uint8)
-        dilated = cv2.dilate(hot_mask.astype(np.uint8), kernel)
         # Isolated hot pixels: hot but no non-self hot neighbours
+        kernel = np.ones((3, 3), np.uint8)
         neighbour_count = cv2.filter2D(
             hot_mask.astype(np.float32), -1, kernel.astype(np.float32)
         )
