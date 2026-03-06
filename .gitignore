@@ -11,3 +11,4 @@ build/
 .env
 *.log
 /tmp/
+cubesat.db
