@@ -1,0 +1,42 @@
+name: critical_conjunction
+description: "Critical conjunction, TCA in 12 minutes, miss distance <1km"
+# 7200 frames at 10 fps = 720 seconds = 12 minutes (matches TCA description)
+frame_rate: 10.0
+duration_frames: 7200
+width: 640
+height: 480
+noise:
+  gaussian_sigma: 3.0
+  hot_pixel_density: 0.003
+  cosmic_ray_probability: 0.03
+debris:
+  - id: 1
+    x: 200.0
+    y: 240.0
+    vx: 3.5
+    vy: -1.2
+    size: 4.0
+    brightness: 220
+    type: streak
+    range_km: 8.0
+    range_rate: -0.15
+  - id: 2
+    x: 320.0
+    y: 180.0
+    vx: 2.0
+    vy: 2.0
+    size: 3.0
+    brightness: 200
+    type: blob
+    range_km: 6.0
+    range_rate: -0.12
+  - id: 3
+    x: 450.0
+    y: 350.0
+    vx: -1.5
+    vy: -0.8
+    size: 2.0
+    brightness: 170
+    type: point
+    range_km: 4.0
+    range_rate: -0.08
