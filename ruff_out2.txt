@@ -1,0 +1,143 @@
+﻿F401 [*] `shared.schemas.RiskAlert` imported but unused
+  --> ingestion\api.py:19:57
+   |
+17 | from ingestion.database import CubeSatDatabase
+18 | from ingestion.worker import ProcessingWorker
+19 | from shared.schemas import ImageFrame, TelemetryPacket, RiskAlert, TrackObject
+   |                                                         ^^^^^^^^^
+20 | from vision.pipeline import VisionPipeline
+21 | from prediction.pipeline import PredictionPipeline
+   |
+help: Remove unused import
+
+F401 [*] `shared.schemas.TrackObject` imported but unused
+  --> ingestion\api.py:19:68
+   |
+17 | from ingestion.database import CubeSatDatabase
+18 | from ingestion.worker import ProcessingWorker
+19 | from shared.schemas import ImageFrame, TelemetryPacket, RiskAlert, TrackObject
+   |                                                                    ^^^^^^^^^^^
+20 | from vision.pipeline import VisionPipeline
+21 | from prediction.pipeline import PredictionPipeline
+   |
+help: Remove unused import
+
+F401 [*] `base64` imported but unused
+  --> ingestion\api.py:22:8
+   |
+20 | from vision.pipeline import VisionPipeline
+21 | from prediction.pipeline import PredictionPipeline
+22 | import base64
+   |        ^^^^^^
+23 | import cv2
+24 | import numpy as np
+   |
+help: Remove unused import: `base64`
+
+F401 [*] `cv2` imported but unused
+  --> ingestion\api.py:23:8
+   |
+21 | from prediction.pipeline import PredictionPipeline
+22 | import base64
+23 | import cv2
+   |        ^^^
+24 | import numpy as np
+   |
+help: Remove unused import: `cv2`
+
+F401 [*] `numpy` imported but unused
+  --> ingestion\api.py:24:17
+   |
+22 | import base64
+23 | import cv2
+24 | import numpy as np
+   |                 ^^
+25 |
+26 | logger = logging.getLogger(__name__)
+   |
+help: Remove unused import: `numpy`
+
+F401 [*] `datetime.datetime` imported but unused
+  --> ingestion\database.py:8:22
+   |
+ 6 | import sqlite3
+ 7 | import logging
+ 8 | from datetime import datetime, timezone
+   |                      ^^^^^^^^
+ 9 | from pathlib import Path
+10 | from typing import List, Optional, Any
+   |
+help: Remove unused import
+
+F401 [*] `datetime.timezone` imported but unused
+  --> ingestion\database.py:8:32
+   |
+ 6 | import sqlite3
+ 7 | import logging
+ 8 | from datetime import datetime, timezone
+   |                                ^^^^^^^^
+ 9 | from pathlib import Path
+10 | from typing import List, Optional, Any
+   |
+help: Remove unused import
+
+F401 [*] `typing.Optional` imported but unused
+  --> ingestion\database.py:10:26
+   |
+ 8 | from datetime import datetime, timezone
+ 9 | from pathlib import Path
+10 | from typing import List, Optional, Any
+   |                          ^^^^^^^^
+11 |
+12 | from shared.schemas import TrackObject, RiskAlert
+   |
+help: Remove unused import
+
+F401 [*] `typing.Any` imported but unused
+  --> ingestion\database.py:10:36
+   |
+ 8 | from datetime import datetime, timezone
+ 9 | from pathlib import Path
+10 | from typing import List, Optional, Any
+   |                                    ^^^
+11 |
+12 | from shared.schemas import TrackObject, RiskAlert
+   |
+help: Remove unused import
+
+F401 [*] `datetime.datetime` imported but unused
+  --> ingestion\worker.py:9:22
+   |
+ 7 | import numpy as np
+ 8 | import math
+ 9 | from datetime import datetime, timezone
+   |                      ^^^^^^^^
+10 | from typing import Optional, List, Dict, Any
+   |
+help: Remove unused import
+
+F401 [*] `datetime.timezone` imported but unused
+  --> ingestion\worker.py:9:32
+   |
+ 7 | import numpy as np
+ 8 | import math
+ 9 | from datetime import datetime, timezone
+   |                                ^^^^^^^^
+10 | from typing import Optional, List, Dict, Any
+   |
+help: Remove unused import
+
+F841 Local variable `current` is assigned to but never used
+   --> prediction\pipeline.py:189:9
+    |
+187 |         path = []
+188 |         dt = duration / (steps - 1)
+189 |         current = sat_state.copy()
+    |         ^^^^^^^
+190 |         for i in range(steps):
+191 |             t = i * dt
+    |
+help: Remove assignment to unused variable `current`
+
+Found 12 errors.
+[*] 11 fixable with the `--fix` option (1 hidden fix can be enabled with the `--unsafe-fixes` option).

@@ -122,9 +122,16 @@ class PredictionPipeline:
             combined_cov = self._pc_calculator.combine_covariances(sat_cov, debris_cov)
             pc = self._pc_calculator.compute_pc(miss_km, combined_cov)
 
+            # Store computed metrics back onto the track dict for the frontend
+            track["pc"] = pc
+            track["tca_min"] = tca_s / 60.0
+            track["vx"] = float(debris_state[3]) * 1000.0  # km/s -> m/s
+            track["vy"] = float(debris_state[4]) * 1000.0  # km/s -> m/s
+
             # Risk assessment
             alert = self._risk_assessor.assess(track_id, pc, miss_km, tca_s)
             if alert is not None:
+                track["alert_level"] = alert.alert_level.value.lower()
                 # Try to plan avoidance if risk is high
                 if tca_s < 3600: # plan if TCA within 1 hour
                     maneuver = self._maneuver_planner.plan_avoidance(
@@ -133,6 +140,8 @@ class PredictionPipeline:
                     if maneuver:
                         alert.recommended_action += f" | {maneuver['direction'].upper()} burn: {maneuver['delta_v_ms']} m/s"
                 alerts.append(alert)
+            else:
+                track["alert_level"] = "nominal"
 
         return alerts
 

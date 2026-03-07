@@ -93,15 +93,16 @@ class TelemetryGenerator:
         # Advance orbital angle
         self._angle += self._omega * self._dt
 
-        # ECI position (circular, equatorial)
+        # ECI position (circular, inclined 51.6 degrees approx like ISS)
+        inclination = math.radians(51.6)
         x = _ORBIT_RADIUS_KM * math.cos(self._angle)
-        y = _ORBIT_RADIUS_KM * math.sin(self._angle)
-        z = 0.0
+        y = _ORBIT_RADIUS_KM * math.sin(self._angle) * math.cos(inclination)
+        z = _ORBIT_RADIUS_KM * math.sin(self._angle) * math.sin(inclination)
 
         # ECI velocity (perpendicular to radius)
         vx = -_ORBITAL_VELOCITY_KMS * math.sin(self._angle)
-        vy = _ORBITAL_VELOCITY_KMS * math.cos(self._angle)
-        vz = 0.0
+        vy = _ORBITAL_VELOCITY_KMS * math.cos(self._angle) * math.cos(inclination)
+        vz = _ORBITAL_VELOCITY_KMS * math.cos(self._angle) * math.sin(inclination)
 
         # Attitude: small random jitter around base quaternion
         jitter = self._rng.normal(0.0, 0.002, size=3)

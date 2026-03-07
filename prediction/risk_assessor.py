@@ -27,10 +27,13 @@ class RiskAssessor:
     PC_WARNING: float = 1e-4
     PC_CRITICAL: float = 1e-3
 
-    RANGE_ADVISORY_KM: float = 10.0
-    RANGE_WARNING_KM: float = 5.0
+    RANGE_ADVISORY_KM: float = 15.0
+    RANGE_WARNING_KM: float = 8.0
+    RANGE_CRITICAL_KM: float = 2.0
 
-    TCA_CRITICAL_S: float = 900.0  # 15 minutes
+    TCA_ADVISORY_S: float = 45.0
+    TCA_WARNING_S: float = 25.0
+    TCA_CRITICAL_S: float = 10.0  # Scaled down to fit 20s simulation loop
 
     # ------------------------------------------------------------------
     # Recommended actions
@@ -68,18 +71,21 @@ class RiskAssessor:
         if (
             pc > self.PC_CRITICAL
             or tca_seconds < self.TCA_CRITICAL_S
+            or miss_distance_km < self.RANGE_CRITICAL_KM
         ):
             level = AlertLevel.CRITICAL
             action = self._ACTION_CRITICAL
         elif (
             pc > self.PC_WARNING
             or miss_distance_km < self.RANGE_WARNING_KM
+            or tca_seconds < self.TCA_WARNING_S
         ):
             level = AlertLevel.WARNING
             action = self._ACTION_WARNING
         elif (
             pc > self.PC_ADVISORY
             or miss_distance_km < self.RANGE_ADVISORY_KM
+            or tca_seconds < self.TCA_ADVISORY_S
         ):
             level = AlertLevel.ADVISORY
             action = self._ACTION_ADVISORY

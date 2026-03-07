@@ -10,6 +10,8 @@ import OrbitalView from './components/OrbitalView'
 import SystemHealth from './components/SystemHealth'
 import ObjectInspector from './components/ObjectInspector'
 import CriticalModal from './components/CriticalModal'
+import Radar from './components/Radar'
+import RiskGauge from './components/RiskGauge'
 import useDashboardStore from './store'
 
 /**
@@ -30,9 +32,9 @@ function App() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="p-1.5 bg-blue-600 rounded-lg shadow-lg shadow-blue-900/20">
-               <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 21l-8-4.5v-9L12 3l8 4.5v9L12 21z" />
-               </svg>
+              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 21l-8-4.5v-9L12 3l8 4.5v9L12 21z" />
+              </svg>
             </div>
             <div>
               <h1 className="text-xl font-black tracking-tighter text-white uppercase leading-none">
@@ -42,13 +44,13 @@ function App() {
             </div>
           </div>
           <div className="text-right">
-             <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-0.5">Last Transmission</p>
-             <p className="text-xs font-mono text-gray-300">
-               {lastUpdate ? new Date(lastUpdate).toISOString() : 'AWAITING LINK...'}
-             </p>
+            <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-0.5">Last Transmission</p>
+            <p className="text-xs font-mono text-gray-300">
+              {lastUpdate ? new Date(lastUpdate).toISOString() : 'AWAITING LINK...'}
+            </p>
           </div>
         </div>
-        
+
         {/* Real-time Stat HUD */}
         <SystemMetricsHUD />
       </header>
@@ -57,9 +59,11 @@ function App() {
       <main className="flex-1 p-3 sm:p-4 overflow-auto">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 max-w-screen-2xl mx-auto">
 
-          {/* Left column: Live feed + System health */}
+          {/* Left column: Live feed + Status Monitor + Radar + RiskGauge */}
           <div className="flex flex-col gap-4">
             <LiveFeed />
+            <RiskGauge />
+            <Radar />
             <SystemHealth />
           </div>
 

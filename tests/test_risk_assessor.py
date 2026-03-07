@@ -57,12 +57,12 @@ def test_critical_alert_pc() -> None:
 
 
 def test_critical_alert_tca() -> None:
-    # TCA below TCA_CRITICAL_S (900 s) triggers CRITICAL regardless of Pc
+    # TCA below TCA_CRITICAL_S (10 s) triggers CRITICAL regardless of Pc
     alert = _ASSESSOR.assess(
         track_id=5,
         pc=1e-8,
         miss_distance_km=50.0,
-        tca_seconds=500.0,
+        tca_seconds=5.0,
     )
     assert alert is not None
     assert alert.alert_level == AlertLevel.CRITICAL

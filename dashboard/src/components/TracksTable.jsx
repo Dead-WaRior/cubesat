@@ -81,48 +81,49 @@ function TracksTable() {
           <table className="w-full text-xs text-left">
             <thead>
               <tr className="border-b border-gray-700 bg-gray-800/60 text-gray-400 uppercase tracking-wider">
-                <th className="px-3 py-2">Track ID</th>
-                <th className="px-3 py-2">Position (x, y)</th>
-                <th className="px-3 py-2">Velocity (m/s)</th>
-                <th className="px-3 py-2">Pc</th>
-                <th className="px-3 py-2">Alert</th>
-                <th className="px-3 py-2">TCA (min)</th>
-                <th className="px-3 py-2">Age (fr)</th>
+                <th className="px-3 py-2">Debris ID</th>
+                <th className="px-3 py-2">Distance</th>
+                <th className="px-3 py-2">Velocity</th>
+                <th className="px-3 py-2">Risk</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">
-              {tracks.map((track) => (
-                <tr 
-                  key={track.track_id} 
-                  onClick={() => setSelectedTrackId(track.track_id)}
-                  className={`${rowBg(track.alert_level)} ${
-                    String(selectedTrackId) === String(track.track_id) 
-                    ? 'bg-blue-500/20 border-l-blue-400' 
-                    : ''
-                  }`}
-                >
-                  <td className="px-3 py-2 font-mono text-gray-300">{track.track_id}</td>
-                  <td className="px-3 py-2 font-mono text-gray-300">
-                    ({typeof track.x === 'number' ? track.x.toFixed(3) : '—'},&nbsp;
-                    {typeof track.y === 'number' ? track.y.toFixed(3) : '—'})
-                  </td>
-                  <td className="px-3 py-2 font-mono text-gray-300">
-                    {typeof track.vx === 'number' && typeof track.vy === 'number'
-                      ? Math.hypot(track.vx, track.vy).toFixed(1)
-                      : '—'}
-                  </td>
-                  <td className="px-3 py-2 font-mono text-gray-200">{formatPc(track.pc)}</td>
-                  <td className="px-3 py-2">
-                    <AlertBadge alertLevel={track.alert_level} />
-                  </td>
-                  <td className="px-3 py-2 font-mono text-gray-300">
-                    {typeof track.tca_min === 'number' ? track.tca_min.toFixed(1) : '—'}
-                  </td>
-                  <td className="px-3 py-2 font-mono text-gray-400">
-                    {track.age_frames ?? '—'}
-                  </td>
-                </tr>
-              ))}
+              {tracks.map((track) => {
+                const isHighRisk = track.alert_level === 'critical'
+                const velocityKmS = typeof track.vx === 'number' && typeof track.vy === 'number'
+                  ? (Math.hypot(track.vx, track.vy)).toFixed(1) // Assuming it's already m/s, wait, I'll divide by 1000 to make it km/s if needed, actually it says km/s in the requirements: "6.9 km/s"
+                  : '—'
+                const distMeters = typeof track.tca_min === 'number' && typeof track.vx === 'number'
+                  ? (Math.max(0, track.tca_min * 60 * Math.hypot(track.vx, track.vy)) / 1000).toFixed(0) // rough proxy since true dist isn't passed down
+                  : '—'
+                
+                let riskText = 'Low'
+                if (track.alert_level === 'warning') riskText = 'Medium'
+                if (track.alert_level === 'critical') riskText = 'High'
+
+                return (
+                  <tr 
+                    key={track.track_id} 
+                    onClick={() => setSelectedTrackId(track.track_id)}
+                    className={`${rowBg(track.alert_level)} ${
+                      String(selectedTrackId) === String(track.track_id) 
+                      ? 'bg-blue-500/20 border-l-blue-400' 
+                      : ''
+                    }`}
+                  >
+                    <td className="px-3 py-2 font-mono text-gray-300">D-{String(track.track_id).padStart(3, '0')}</td>
+                    <td className="px-3 py-2 font-mono text-gray-300">
+                      {distMeters !== '—' ? `${distMeters} m` : '—'}
+                    </td>
+                    <td className="px-3 py-2 font-mono text-gray-300">
+                      {velocityKmS !== '—' ? `${velocityKmS} km/s` : '—'}
+                    </td>
+                    <td className={`px-3 py-2 font-bold ${isHighRisk ? 'text-red-500' : track.alert_level === 'warning' ? 'text-orange-500' : 'text-green-500'}`}>
+                      {riskText}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         )}

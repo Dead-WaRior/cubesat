@@ -1,149 +1,133 @@
-import PropTypes from 'prop-types'
+import { useState, useCallback } from 'react'
 import useDashboardStore from '../store'
 
 /**
- * CriticalModal
+ * CriticalModal → Side Notification Panel
  *
- * Full-screen blocking overlay that appears whenever there is at least one
- * unacknowledged CRITICAL alert.  The operator must explicitly click
- * "ACKNOWLEDGE & DISMISS" — clicking outside the modal has no effect.
- *
- * Renders nothing when no critical unacknowledged alerts exist.
+ * Slides in from the top-right as a non-blocking notification toast.
+ * Visually prominent but doesn't obstruct the orbital simulation area.
+ * Auto-dismisses after 15 seconds or on manual click.
  */
+const COOLDOWN_MS = 30000
+
 function CriticalModal() {
   const alerts = useDashboardStore((s) => s.alerts)
   const acknowledgeAlert = useDashboardStore((s) => s.acknowledgeAlert)
+  const [suppressedUntil, setSuppressedUntil] = useState(0)
 
-  // Find the most recent unacknowledged critical alert
   const criticalAlert = [...alerts]
     .reverse()
     .find((a) => a.alert_level === 'critical' && !a.acknowledged)
 
-  if (!criticalAlert) return null
+  const handleDismiss = useCallback(() => {
+    if (criticalAlert) {
+      alerts.forEach((a) => {
+        if (a.alert_level === 'critical' && !a.acknowledged) {
+          acknowledgeAlert(a.alert_id)
+        }
+      })
+      setSuppressedUntil(Date.now() + COOLDOWN_MS)
+    }
+  }, [criticalAlert, alerts, acknowledgeAlert])
+
+  if (!criticalAlert || Date.now() < suppressedUntil) return null
 
   return (
-    /* Overlay — pointer-events on the backdrop are disabled to prevent
-       accidental dismissal by clicking outside the modal card. */
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-      aria-modal="true"
-      role="alertdialog"
-      aria-labelledby="critical-modal-title"
-    >
-      <div
-        className="relative w-full max-w-lg mx-4 bg-gray-950 border-2 border-red-600 rounded-2xl shadow-2xl shadow-red-900/50 animate-pulse-border"
-        style={{ animation: 'pulseBorder 1.5s ease-in-out infinite' }}
-        /* Stop propagation so clicking inside the card never reaches the
-           backdrop (belt-and-suspenders since backdrop has no onClick). */
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Pulse ring */}
-        <style>{`
-          @keyframes pulseBorder {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.6), 0 25px 60px -15px rgba(127,29,29,0.5); }
-            50%       { box-shadow: 0 0 0 8px rgba(239,68,68,0),  0 25px 60px -15px rgba(127,29,29,0.5); }
-          }
-        `}</style>
+    <>
+      <style>{`
+        @keyframes slideInRight {
+          from { transform: translateX(120%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes criticalPulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5), 0 8px 32px rgba(0,0,0,0.4); }
+          50% { box-shadow: 0 0 0 6px rgba(239,68,68,0), 0 8px 32px rgba(0,0,0,0.4); }
+        }
+        @keyframes redGlow {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.8; }
+        }
+      `}</style>
 
-        {/* Header */}
-        <div className="flex items-center gap-3 px-6 py-4 border-b border-red-800">
-          <span className="text-3xl select-none" role="img" aria-label="warning">🚨</span>
-          <div>
-            <h2
-              id="critical-modal-title"
-              className="text-lg font-bold text-red-400 uppercase tracking-wide"
+      <div
+        className="fixed top-24 right-4 z-50 w-[360px] max-w-[calc(100vw-2rem)]"
+        style={{ animation: 'slideInRight 0.4s cubic-bezier(0.16,1,0.3,1) forwards' }}
+      >
+        <div
+          className="bg-gray-950/95 backdrop-blur-xl border border-red-600 rounded-xl overflow-hidden"
+          style={{ animation: 'criticalPulse 2s ease-in-out infinite' }}
+        >
+          {/* Red accent strip */}
+          <div className="h-1 bg-gradient-to-r from-red-600 via-red-400 to-red-600"
+            style={{ animation: 'redGlow 1.5s ease-in-out infinite' }} />
+
+          {/* Header */}
+          <div className="flex items-center gap-2.5 px-4 py-3 border-b border-red-900/50">
+            <div className="w-8 h-8 rounded-full bg-red-600/20 flex items-center justify-center flex-shrink-0">
+              <span className="text-lg" role="img" aria-label="alert">🚨</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-sm font-bold text-red-400 uppercase tracking-wide">
+                Collision Alert
+              </h2>
+              <p className="text-[10px] text-red-300/60">Immediate action required</p>
+            </div>
+            <button
+              onClick={handleDismiss}
+              className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-500 hover:text-white transition-colors flex-shrink-0"
+              aria-label="Dismiss"
             >
-              Critical Collision Alert
-            </h2>
-            <p className="text-xs text-red-300/70">Immediate action required</p>
+              ✕
+            </button>
+          </div>
+
+          {/* Alert details */}
+          <div className="px-4 py-3 space-y-2 text-xs">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-black/30 rounded-lg px-3 py-2">
+                <span className="text-[9px] text-gray-500 uppercase block">Track ID</span>
+                <span className="font-mono text-white text-sm">{criticalAlert.track_id}</span>
+              </div>
+              <div className="bg-black/30 rounded-lg px-3 py-2">
+                <span className="text-[9px] text-gray-500 uppercase block">Collision Prob</span>
+                <span className="font-mono text-red-400 text-sm font-bold">
+                  {typeof criticalAlert.pc === 'number' ? criticalAlert.pc.toExponential(2) : '—'}
+                </span>
+              </div>
+              <div className="bg-black/30 rounded-lg px-3 py-2">
+                <span className="text-[9px] text-gray-500 uppercase block">TCA</span>
+                <span className="font-mono text-white text-sm">
+                  {typeof criticalAlert.tca_min === 'number' ? `${criticalAlert.tca_min.toFixed(1)} min` : '—'}
+                </span>
+              </div>
+              <div className="bg-black/30 rounded-lg px-3 py-2">
+                <span className="text-[9px] text-gray-500 uppercase block">Miss Dist</span>
+                <span className="font-mono text-white text-sm">
+                  {typeof criticalAlert.miss_distance_km === 'number' ? `${criticalAlert.miss_distance_km.toFixed(2)} km` : '—'}
+                </span>
+              </div>
+            </div>
+
+            {criticalAlert.recommended_action && (
+              <div className="rounded-lg bg-red-950/40 border border-red-800/50 px-3 py-2">
+                <p className="text-[9px] text-gray-400 uppercase mb-0.5">Action</p>
+                <p className="text-red-200 text-xs font-medium">{criticalAlert.recommended_action}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Action button */}
+          <div className="px-4 pb-3">
+            <button
+              onClick={handleDismiss}
+              className="w-full bg-red-600/80 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg text-xs uppercase tracking-widest transition-all hover:shadow-[0_0_20px_rgba(239,68,68,0.3)]"
+            >
+              Acknowledge
+            </button>
           </div>
         </div>
-
-        {/* Alert details */}
-        <div className="px-6 py-5 space-y-3 text-sm">
-          <DetailRow label="Track ID" value={criticalAlert.track_id} mono />
-          <DetailRow
-            label="Probability of Collision (Pc)"
-            value={
-              typeof criticalAlert.pc === 'number'
-                ? criticalAlert.pc.toExponential(3)
-                : '—'
-            }
-            mono
-            highlight
-          />
-          <DetailRow
-            label="Time to Closest Approach"
-            value={
-              typeof criticalAlert.tca_min === 'number'
-                ? `${criticalAlert.tca_min.toFixed(1)} minutes`
-                : '—'
-            }
-            mono
-          />
-          <DetailRow
-            label="Miss Distance"
-            value={
-              typeof criticalAlert.miss_distance_km === 'number'
-                ? `${criticalAlert.miss_distance_km.toFixed(3)} km`
-                : '—'
-            }
-            mono
-          />
-          {criticalAlert.recommended_action && (
-            <div className="mt-3 rounded-lg bg-red-950/50 border border-red-800 px-4 py-3">
-              <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">
-                Recommended Action
-              </p>
-              <p className="text-red-200 font-medium">{criticalAlert.recommended_action}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Timestamp */}
-        {criticalAlert.timestamp && (
-          <p className="px-6 pb-1 text-xs text-gray-600">
-            Alert received: {new Date(criticalAlert.timestamp).toLocaleString()}
-          </p>
-        )}
-
-        {/* Action button */}
-        <div className="px-6 py-4 border-t border-red-900">
-          <button
-            onClick={() => acknowledgeAlert(criticalAlert.alert_id)}
-            className="w-full bg-red-600 hover:bg-red-500 active:bg-red-700 text-white font-bold py-3 px-6 rounded-lg text-sm uppercase tracking-widest transition-colors focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:ring-offset-gray-950"
-            autoFocus
-          >
-            Acknowledge &amp; Dismiss
-          </button>
-        </div>
       </div>
-    </div>
-  )
-}
-
-/**
- * A single key-value row within the modal detail section.
- * @param {{ label: string, value: string, mono?: boolean, highlight?: boolean }} props
- */
-function DetailRow({ label, value, mono = false, highlight = false }) {
-  DetailRow.propTypes = {
-    label: PropTypes.string,
-    value: PropTypes.string,
-    mono: PropTypes.bool,
-    highlight: PropTypes.bool,
-  }
-  return (
-    <div className="flex justify-between items-baseline gap-4">
-      <span className="text-gray-500 flex-shrink-0">{label}</span>
-      <span
-        className={`text-right ${mono ? 'font-mono' : ''} ${
-          highlight ? 'text-red-300 font-semibold text-base' : 'text-gray-200'
-        }`}
-      >
-        {value}
-      </span>
-    </div>
+    </>
   )
 }
 
