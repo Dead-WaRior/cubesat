@@ -1,34 +1,39 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import useDashboardStore from '../store'
 
 /**
  * Derive delta-V recommendations from the most severe active alert.
- * @param {import('../store').Alert} alert
- * @returns {string[]}
  */
 function buildRecommendations(alert) {
   if (!alert) return []
-
   const recs = []
   if (alert.recommended_action) recs.push(alert.recommended_action)
 
-  if (alert.alert_level === 'critical') {
-    recs.push('Execute emergency avoidance burn immediately')
-    recs.push('Estimated Δv: 0.5 – 2.0 m/s along velocity vector')
-  } else if (alert.alert_level === 'warning') {
-    recs.push('Schedule precautionary avoidance maneuver')
-    recs.push('Estimated Δv: 0.1 – 0.5 m/s along velocity vector')
+  const level = (alert.alert_level || '').toLowerCase()
+  if (level === 'critical') {
+    recs.push({
+      action: 'Execute emergency avoidance burn',
+      timeToManeuver: Math.max(0, ((alert.tca_min || 0) * 60) - 120),
+      deltaV: 1.25,
+      orbitShift: 840
+    })
+  } else if (level === 'warning') {
+    recs.push({
+      action: 'Minor Thruster Burn (Precautionary)',
+      timeToManeuver: Math.max(0, ((alert.tca_min || 0) * 60) - 300),
+      deltaV: 0.15,
+      orbitShift: 420
+    })
   }
-
-  return [...new Set(recs)] // deduplicate
+  return recs
 }
 
 /**
  * ManeuverPanel
  *
- * Displays maneuver recommendations when WARNING or CRITICAL alerts are
- * active.  The operator can approve or dismiss the recommendation.
- * Shows a nominal status message when no action is required.
+ * Two modes:
+ *  - MANUAL: operator clicks to approve/simulate maneuver
+ *  - AUTO:   system automatically executes avoidance when Pc crosses critical threshold
  */
 function ManeuverPanel() {
   const alerts = useDashboardStore((s) => s.alerts)
@@ -37,139 +42,209 @@ function ManeuverPanel() {
   const setIsSimulating = useDashboardStore((s) => s.setIsSimulating)
   const setHypotheticalPath = useDashboardStore((s) => s.setHypotheticalPath)
   const satPath = useDashboardStore((s) => s.satPath)
+  const tracks = useDashboardStore((s) => s.tracks)
 
-  const [dismissed, setDismissed] = useState(false)
+  const [maneuverMode, setManeuverMode] = useState('manual') // 'manual' | 'auto'
+  const [autoExecuted, setAutoExecuted] = useState(false)
 
-  const toggleSimulation = () => {
-    if (!isSimulating) {
-        // Calculate a hypothetical "safe" path
-        // For simulation, we take the current satellite path and add a 5% radial boost
-        const safetyPath = satPath.map(p => ({
-            x: p.x * 1.05,
-            y: p.y * 1.05,
-            z: p.z * 1.05
-        }));
-        setHypotheticalPath(safetyPath);
-        setIsSimulating(true);
-    } else {
-        setIsSimulating(false);
+  const executeManeuver = useCallback(() => {
+    if (isSimulating) return
+    const safetyPath = satPath.map(p => ({
+      x: p.x * 1.05,
+      y: p.y * 1.05,
+      z: p.z * 1.05
+    }))
+    setHypotheticalPath(safetyPath)
+    setIsSimulating(true)
+    alerts.forEach(a => acknowledgeAlert(a.alert_id))
+  }, [isSimulating, satPath, setHypotheticalPath, setIsSimulating, alerts, acknowledgeAlert])
+
+  const stopSimulation = useCallback(() => {
+    setIsSimulating(false)
+    setAutoExecuted(false)
+  }, [setIsSimulating])
+
+  // AUTO MODE: detect critical tracks and auto-execute
+  const hasCriticalTrack = tracks.some(t => (t.alert_level || '').toLowerCase() === 'critical')
+
+  useEffect(() => {
+    if (maneuverMode === 'auto' && hasCriticalTrack && !isSimulating && !autoExecuted) {
+      // Auto-execute maneuver after a brief delay
+      const timer = setTimeout(() => {
+        executeManeuver()
+        setAutoExecuted(true)
+      }, 1500)
+      return () => clearTimeout(timer)
     }
-  };
+  }, [maneuverMode, hasCriticalTrack, isSimulating, autoExecuted, executeManeuver])
 
-  // Find the most severe unacknowledged actionable alert
+  // Reset autoExecuted when no more critical tracks
+  useEffect(() => {
+    if (!hasCriticalTrack && autoExecuted) {
+      setAutoExecuted(false)
+    }
+  }, [hasCriticalTrack, autoExecuted])
+
+  // Find urgent alert for display
   const urgentAlert = alerts
-    .filter(
-      (a) =>
-        !a.acknowledged &&
-        (a.alert_level === 'warning' || a.alert_level === 'critical'),
-    )
+    .filter((a) => {
+      const lvl = (a.alert_level || '').toLowerCase()
+      return !a.acknowledged && (lvl === 'warning' || lvl === 'critical')
+    })
     .sort((a, b) => {
       const rank = { critical: 2, warning: 1 }
-      return (rank[b.alert_level] ?? 0) - (rank[a.alert_level] ?? 0)
+      return (rank[(b.alert_level || '').toLowerCase()] ?? 0) - (rank[(a.alert_level || '').toLowerCase()] ?? 0)
     })[0]
 
   const recommendations = buildRecommendations(urgentAlert)
-  const isCritical = urgentAlert?.alert_level === 'critical'
-
-  if (!urgentAlert || dismissed) {
-    return (
-      <div className="glass-card rounded-xl px-4 py-4 shadow-lg">
-        <h2 className="text-sm font-semibold text-gray-200 tracking-wide uppercase mb-2">
-          Maneuver Recommendation
-        </h2>
-        <div className="flex items-center gap-2 text-blue-400 text-sm">
-          <span className="text-blue-500 text-lg">✓</span>
-          No maneuver required — system nominal
-        </div>
-      </div>
-    )
-  }
+  const isCritical = (urgentAlert?.alert_level || '').toLowerCase() === 'critical'
 
   return (
-    <div
-      className={`rounded-xl border overflow-hidden ${
-        isCritical
-          ? 'bg-red-950/30 border-red-600'
-          : 'bg-orange-950/30 border-orange-600'
-      }`}
-    >
-      {/* Header */}
-      <div
-        className={`px-4 py-3 border-b flex items-center justify-between ${
-          isCritical ? 'border-red-700' : 'border-orange-700'
-        }`}
-      >
-        <h2 className="text-sm font-semibold tracking-wide uppercase text-gray-200">
-          {isCritical ? '🚨 ' : '⚠ '}Maneuver Recommendation
+    <div className="glass-card rounded-xl overflow-hidden shadow-lg">
+      {/* Header with Mode Toggle */}
+      <div className="glass-header flex justify-between items-center">
+        <h2 className="text-sm font-semibold text-gray-200 tracking-wide uppercase">
+          {isSimulating ? '🔥 ' : ''}Maneuver Control
         </h2>
-        <span
-          className={`text-xs font-bold uppercase px-2 py-0.5 rounded ${
-            isCritical ? 'bg-red-600 text-white' : 'bg-orange-500 text-white'
-          }`}
-        >
-          {urgentAlert.alert_level}
-        </span>
-      </div>
-
-      {/* Details */}
-      <div className="px-4 py-3 space-y-1.5 text-xs text-gray-300">
-        <div>
-          <span className="text-gray-500">Track:</span>{' '}
-          <span className="font-mono">{urgentAlert.track_id}</span>
+        <div className="flex items-center gap-1 bg-black/30 rounded-lg p-0.5">
+          <button
+            onClick={() => setManeuverMode('manual')}
+            className={`text-[9px] font-bold uppercase px-2 py-1 rounded-md transition-all ${maneuverMode === 'manual'
+                ? 'bg-blue-600 text-white shadow-[0_0_8px_rgba(59,130,246,0.3)]'
+                : 'text-gray-500 hover:text-gray-300'
+              }`}
+          >
+            Manual
+          </button>
+          <button
+            onClick={() => setManeuverMode('auto')}
+            className={`text-[9px] font-bold uppercase px-2 py-1 rounded-md transition-all ${maneuverMode === 'auto'
+                ? 'bg-green-600 text-white shadow-[0_0_8px_rgba(34,197,94,0.3)]'
+                : 'text-gray-500 hover:text-gray-300'
+              }`}
+          >
+            Auto
+          </button>
         </div>
-        {typeof urgentAlert.tca_min === 'number' && (
-          <div>
-            <span className="text-gray-500">TCA:</span>{' '}
-            <span className="font-mono">{urgentAlert.tca_min.toFixed(1)} min</span>
-          </div>
-        )}
-        {typeof urgentAlert.pc === 'number' && (
-          <div>
-            <span className="text-gray-500">Pc:</span>{' '}
-            <span className="font-mono">{urgentAlert.pc.toExponential(2)}</span>
-          </div>
-        )}
       </div>
 
-      {/* Recommendations list */}
-      {recommendations.length > 0 && (
-        <ul className="px-4 pb-3 space-y-1.5 text-xs">
-          {recommendations.map((rec, i) => (
-            <li key={i} className="flex gap-2 text-gray-300">
-              <span className={isCritical ? 'text-red-400' : 'text-orange-400'}>→</span>
-              {rec}
-            </li>
-          ))}
-        </ul>
+      {/* Auto mode indicator */}
+      {maneuverMode === 'auto' && (
+        <div className="px-4 py-2 bg-green-950/30 border-b border-green-800/30 flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <span className="text-[10px] text-green-400 font-bold uppercase tracking-wider">
+            Autonomous Avoidance Active
+          </span>
+          <span className="text-[9px] text-green-500/60 ml-auto font-mono">
+            AUTO-EXECUTE ON CRITICAL
+          </span>
+        </div>
       )}
 
-      {/* Action buttons */}
-      <div className="px-4 py-3 border-t border-gray-700 flex flex-col gap-2">
-        <div className="flex gap-2">
-            <button
-              onClick={() => acknowledgeAlert(urgentAlert.alert_id)}
-              className="flex-1 bg-green-600 hover:bg-green-500 active:bg-green-700 text-white text-xs font-semibold py-1.5 px-3 rounded transition-colors"
-            >
-              Approve Maneuver
-            </button>
-            <button
-              onClick={() => setDismissed(true)}
-              className="flex-1 bg-gray-700 hover:bg-gray-600 active:bg-gray-800 text-gray-200 text-xs font-semibold py-1.5 px-3 rounded transition-colors"
-            >
-              Dismiss
-            </button>
+      {/* Simulation Active State */}
+      {isSimulating && (
+        <div className="px-4 py-3 bg-blue-950/30 border-b border-blue-700/30">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse shadow-[0_0_6px_#38bdf8]" />
+            <span className="text-[10px] text-blue-400 font-black uppercase tracking-widest">
+              {maneuverMode === 'auto' ? 'AUTO-MANEUVER EXECUTING' : 'MANEUVER SIMULATING'}
+            </span>
+          </div>
+          <div className="w-full bg-blue-950 rounded-full h-1.5 overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full animate-[progress_3s_ease-in-out_infinite]"
+              style={{ width: '100%', transformOrigin: 'left' }} />
+          </div>
+          <div className="flex justify-between mt-2 text-[9px] font-mono">
+            <span className="text-green-400">THRUSTER IGNITION ✓</span>
+            <span className="text-blue-300">ΔV: +1.25 m/s</span>
+          </div>
+          <button
+            onClick={stopSimulation}
+            className="w-full mt-2 text-[9px] font-bold uppercase py-1.5 rounded border border-gray-700 text-gray-400 hover:bg-white/5 transition-colors"
+          >
+            Cancel Maneuver
+          </button>
         </div>
-        <button
-          onClick={toggleSimulation}
-          className={`w-full text-xs font-black uppercase py-2 rounded border transition-all ${
-              isSimulating 
-              ? 'bg-blue-600/20 border-blue-500 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.3)]' 
-              : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
-          }`}
-        >
-          {isSimulating ? '⚡ SIMULATION ACTIVE' : '🔭 SIMULATE SAFETY PATH'}
-        </button>
-      </div>
+      )}
+
+      {/* Alert Details (when not simulating) */}
+      {!isSimulating && urgentAlert && (
+        <div className="px-4 py-3 space-y-2">
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${isCritical ? 'bg-red-950/30 border-red-600/50' : 'bg-orange-950/30 border-orange-600/50'
+            }`}>
+            <span className="text-sm">{isCritical ? '🚨' : '⚠️'}</span>
+            <div className="flex-1">
+              <span className="text-xs font-bold text-gray-200">Track {urgentAlert.track_id}</span>
+              {typeof urgentAlert.tca_min === 'number' && (
+                <span className="text-[10px] text-gray-400 ml-2">TCA: {urgentAlert.tca_min.toFixed(1)} min</span>
+              )}
+            </div>
+            <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${isCritical ? 'bg-red-600 text-white' : 'bg-orange-500 text-white'
+              }`}>
+              {urgentAlert.alert_level}
+            </span>
+          </div>
+
+          {/* Recommendation details */}
+          {recommendations.length > 0 && recommendations[recommendations.length - 1]?.action && (
+            <div className="space-y-1 text-[10px] text-gray-400">
+              <div className="flex justify-between">
+                <span>Recommended:</span>
+                <span className={`font-bold ${isCritical ? 'text-red-400' : 'text-orange-400'}`}>
+                  {recommendations[recommendations.length - 1].action}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Delta-V:</span>
+                <span className="font-mono text-white">{recommendations[recommendations.length - 1].deltaV?.toFixed(2)} m/s</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Orbit Shift:</span>
+                <span className="font-mono text-white">+{recommendations[recommendations.length - 1].orbitShift} m</span>
+              </div>
+            </div>
+          )}
+
+          {/* Manual mode buttons */}
+          {maneuverMode === 'manual' && (
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={executeManeuver}
+                className="flex-1 bg-green-600 hover:bg-green-500 active:bg-green-700 text-white text-[10px] font-bold py-2 px-3 rounded-lg transition-colors uppercase tracking-wider"
+              >
+                Execute Maneuver
+              </button>
+              <button
+                onClick={() => acknowledgeAlert(urgentAlert.alert_id)}
+                className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 text-[10px] font-bold py-2 px-3 rounded-lg transition-colors uppercase tracking-wider"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
+          {/* Auto mode waiting indicator */}
+          {maneuverMode === 'auto' && isCritical && (
+            <div className="flex items-center gap-2 text-[10px] text-green-400 font-bold animate-pulse">
+              <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+              AUTO-EXECUTING IN 1.5s...
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Nominal state */}
+      {!isSimulating && !urgentAlert && (
+        <div className="px-4 py-4 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
+            <span className="text-green-500 text-lg">✓</span>
+          </div>
+          <div>
+            <p className="text-sm text-blue-400 font-medium">System Nominal</p>
+            <p className="text-[10px] text-gray-500">No maneuver required</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

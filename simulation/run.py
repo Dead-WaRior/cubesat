@@ -8,6 +8,9 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+# Add the project root to sys.path so 'simulation' can be imported
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 
 from simulation.engine import SimulationEngine
 import httpx
@@ -112,8 +115,8 @@ def main(argv: Optional[list[str]] = None) -> None:
         if args.api_url:
             try:
                 with httpx.Client(timeout=2.0) as client:
-                    client.post(f"{args.api_url}/frames", json=image_frame.model_dump(mode='json'))
                     client.post(f"{args.api_url}/telemetry", json=telemetry.model_dump(mode='json'))
+                    client.post(f"{args.api_url}/frames", json=image_frame.model_dump(mode='json'))
             except Exception as exc:
                 logger.warning("Ingestion API push failed: %s", exc)
 

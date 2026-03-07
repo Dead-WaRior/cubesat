@@ -11,17 +11,12 @@ import {
 } from 'recharts'
 import useDashboardStore from '../store'
 
-/** Palette for up to 8 simultaneous tracks */
-const TRACK_COLORS = [
-  '#60a5fa', // blue-400
-  '#34d399', // emerald-400
-  '#f472b6', // pink-400
-  '#fb923c', // orange-400
-  '#a78bfa', // violet-400
-  '#facc15', // yellow-400
-  '#2dd4bf', // teal-400
-  '#f87171', // red-400
-]
+/** Calculate a fixed set of color based on alert level for rendering */
+const getTrackColor = (alertLevel) => {
+  if (alertLevel === 'critical') return '#ef4444' // red-500
+  if (alertLevel === 'warning') return '#eab308' // yellow-500
+  return '#22c55e' // green-500
+}
 
 /**
  * Convert a Unix timestamp to "seconds ago" relative to now.
@@ -119,12 +114,12 @@ function RiskTimeline() {
               <Legend
                 wrapperStyle={{ fontSize: 11, paddingTop: 8, color: '#d1d5db' }}
               />
-              {trackIds.map((id, i) => (
+              {tracks.map((track) => (
                 <Line
-                  key={id}
+                  key={track.track_id}
                   type="monotone"
-                  dataKey={id}
-                  stroke={TRACK_COLORS[i % TRACK_COLORS.length]}
+                  dataKey={track.track_id}
+                  stroke={getTrackColor(track.alert_level)}
                   strokeWidth={2}
                   dot={false}
                   connectNulls

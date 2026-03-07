@@ -86,47 +86,41 @@ function AlertFeed() {
             {sorted.map((alert) => (
               <li
                 key={alert.alert_id ?? `${alert.track_id}-${alert.timestamp}`}
-                className={`px-3 py-2.5 text-xs ${alertRowStyle(alert.alert_level)} ${
-                  alert.acknowledged ? 'opacity-50' : ''
-                }`}
+                className={`px-3 py-2.5 text-xs ${alertRowStyle(alert.alert_level)} ${alert.acknowledged ? 'opacity-50' : ''
+                  }`}
               >
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <LevelBadge level={alert.alert_level} />
-                    <span className="font-mono text-gray-300">{alert.track_id}</span>
-                  </div>
-                  <span className="text-gray-500">{formatTime(alert.timestamp)}</span>
+                <div className="flex items-center justify-between gap-2 flex-wrap mb-2 border-b border-gray-700/50 pb-1.5">
+                  <LevelBadge level={alert.alert_level} />
+                  <span className="text-gray-500 text-[10px] tracking-widest uppercase font-mono">{formatTime(alert.timestamp)}</span>
                 </div>
-
-                <div className="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-0.5 text-gray-400">
-                  <span>
-                    Pc:{' '}
-                    <span className="text-gray-200 font-mono">
-                      {typeof alert.pc === 'number' ? alert.pc.toExponential(2) : '—'}
-                    </span>
-                  </span>
-                  <span>
-                    Miss:{' '}
+                <div className="flex flex-col gap-1 text-gray-400">
+                  <div className="flex gap-2 text-gray-400">
+                    <span className="w-24 shrink-0 font-bold">Debris ID:</span>
+                    <span className="text-gray-200 font-mono">D-{String(alert.track_id).padStart(3, '0')}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="w-24 shrink-0 font-bold">Closest Dist:</span>
                     <span className="text-gray-200 font-mono">
                       {typeof alert.miss_distance_km === 'number'
-                        ? `${alert.miss_distance_km.toFixed(2)} km`
+                        ? `${(alert.miss_distance_km * 1000).toFixed(0)} meters` // converted to meters for typical UI 
                         : '—'}
                     </span>
-                  </span>
-                  <span>
-                    TCA:{' '}
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="w-24 shrink-0 font-bold">TCA:</span>
                     <span className="text-gray-200 font-mono">
                       {typeof alert.tca_min === 'number'
-                        ? `${alert.tca_min.toFixed(1)} min`
+                        ? `${(alert.tca_min * 60).toFixed(0)} seconds` // Convert to seconds
                         : '—'}
                     </span>
-                  </span>
+                  </div>
                 </div>
 
                 {alert.recommended_action && (
-                  <p className="mt-1 text-gray-400 italic leading-snug">
-                    → {alert.recommended_action}
-                  </p>
+                  <div className="mt-2 text-gray-400">
+                    <span className="font-bold">Recommended Action: </span>
+                    <span className="text-gray-200 italic">{alert.recommended_action}</span>
+                  </div>
                 )}
               </li>
             ))}

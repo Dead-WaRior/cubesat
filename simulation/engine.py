@@ -35,6 +35,37 @@ def _load_scenario(scenario_name: str) -> DebrisScenario:
         Populated :class:`DebrisScenario`.  Falls back to an empty scenario if
         the file cannot be found or parsed.
     """
+    if scenario_name == "random":
+        import random
+        debris_list = []
+        num_debris = random.randint(5, 12)
+        for i in range(num_debris):
+            if i < 2:
+                # Force a couple of objects on a collision/close-approach path
+                # Image center is approx 320x240
+                x = random.uniform(500, 700)
+                y = random.uniform(300, 500)
+                dx, dy = 320 - x, 240 - y
+                norm = (dx**2 + dy**2)**0.5
+                speed = random.uniform(2.0, 5.0)
+                vx, vy = (dx/norm)*speed, (dy/norm)*speed
+                rng = random.uniform(1.5, 8.0)
+            else:
+                x = random.uniform(-100, 700)
+                y = random.uniform(-100, 500)
+                vx = random.uniform(-8.0, 8.0)
+                vy = random.uniform(-8.0, 8.0)
+                rng = random.uniform(15.0, 80.0)
+                
+            debris_list.append(DebrisObject(
+                debris_id=i+1, x=x, y=y, vx=vx, vy=vy,
+                size=random.uniform(1.0, 3.5),
+                brightness=random.randint(150, 255),
+                debris_type=random.choice(["streak", "blob", "point"]),
+                range_km=rng
+            ))
+        return DebrisScenario(name="Randomized Environment", debris_list=debris_list, duration_frames=600, frame_rate=10.0)
+
     yaml_path = _SCENARIOS_DIR / f"{scenario_name}.yaml"
     if not yaml_path.exists():
         logger.warning("Scenario file not found: '%s'. Using empty scenario.", yaml_path)

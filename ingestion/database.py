@@ -5,9 +5,8 @@ from __future__ import annotations
 import json
 import sqlite3
 import logging
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional, Any
+from typing import List
 
 from shared.schemas import TrackObject, RiskAlert
 

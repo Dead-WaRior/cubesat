@@ -6,7 +6,6 @@ import logging
 import cv2
 import numpy as np
 import math
-from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 
 from ingestion.queue_manager import QueueManager
@@ -131,7 +130,10 @@ class ProcessingWorker:
 
                 # Sub-satellite point
                 r = math.sqrt(pos['x']**2 + pos['y']**2 + pos['z']**2)
-                lat = math.degrees(math.asin(pos['z'] / r))
+                
+                # Prevent math domain error due to floating point inaccuracies
+                z_over_r = max(-1.0, min(1.0, pos['z'] / r))
+                lat = math.degrees(math.asin(z_over_r))
                 lon = math.degrees(math.atan2(pos['y'], pos['x']))
                 self.sat_lla = {"lat": lat, "lon": lon, "alt": r - 6371.0}
 

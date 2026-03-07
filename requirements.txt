@@ -8,7 +8,7 @@ opencv-python-headless>=4.9.0.80
 # Machine learning / YOLO
 ultralytics>=8.1.0
 
-# Kalman filtering
+
 filterpy>=1.4.5
 
 # Scientific computing

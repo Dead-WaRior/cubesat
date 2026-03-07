@@ -108,6 +108,9 @@ const useDashboardStore = create((set) => ({
   /** @type {boolean} */
   isSimulating: false,
 
+  /** @type {'manual'|'auto'} */
+  maneuverMode: 'manual',
+
   /** @type {Array} */
   hypotheticalPath: [],
 

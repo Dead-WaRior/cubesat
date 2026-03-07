@@ -1,15 +1,5 @@
 import useDashboardStore from '../store'
 
-/**
- * Returns Tailwind border-color class based on detection confidence.
- * @param {number} confidence
- * @returns {string}
- */
-function confidenceColor(confidence) {
-  if (confidence > 0.7) return 'border-green-500'
-  if (confidence >= 0.4) return 'border-yellow-400'
-  return 'border-red-500'
-}
 
 /**
  * LiveFeed
@@ -32,9 +22,8 @@ function LiveFeed() {
         </h2>
         <span className="flex items-center gap-1.5 text-xs">
           <span
-            className={`inline-block w-2 h-2 rounded-full ${
-              isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'
-            }`}
+            className={`inline-block w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'
+              }`}
           />
           <span className={isConnected ? 'text-green-400' : 'text-red-400'}>
             {isConnected ? 'LIVE' : 'DISCONNECTED'}
@@ -51,14 +40,24 @@ function LiveFeed() {
               alt="Live satellite feed"
               className="absolute inset-0 w-full h-full object-cover"
             />
-            {/* Bounding box overlays */}
             {tracks.map((track) => {
               if (!track.bbox) return null
               const { x, y, w, h } = track.bbox
+              const isHighRisk = track.alert_level === 'critical' || track.alert_level === 'warning'
+              const isCritical = track.alert_level === 'critical'
+              const colorClass = isCritical ? 'border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.8)]' : isHighRisk ? 'border-orange-500' : 'border-green-500'
+
+              const velocityKmS = typeof track.vx === 'number' && typeof track.vy === 'number'
+                ? (Math.hypot(track.vx, track.vy)).toFixed(1)
+                : '—'
+              const distMeters = typeof track.tca_min === 'number' && typeof track.vx === 'number'
+                ? (Math.max(0, track.tca_min * 60 * Math.hypot(track.vx, track.vy)) / 1000).toFixed(0)
+                : '—'
+
               return (
                 <div
                   key={track.track_id}
-                  className={`absolute border-2 ${confidenceColor(track.confidence)}`}
+                  className={`absolute border-2 ${colorClass} transition-all duration-300`}
                   style={{
                     left: `${x}px`,
                     top: `${y}px`,
@@ -67,17 +66,20 @@ function LiveFeed() {
                   }}
                 >
                   {/* Track ID label */}
-                  <span
-                    className={`absolute -top-5 left-0 text-[10px] font-mono px-1 rounded-sm bg-black/60 ${
-                      track.confidence > 0.7
-                        ? 'text-green-400'
-                        : track.confidence >= 0.4
-                        ? 'text-yellow-300'
-                        : 'text-red-400'
-                    }`}
+                  <div
+                    className={`absolute -top-[4rem] left-0 text-[9px] font-mono px-1.5 py-1 rounded-sm bg-black/80 whitespace-nowrap ${isCritical ? 'text-red-400 border border-red-500/50' : isHighRisk ? 'text-orange-400' : 'text-green-400'
+                      }`}
                   >
-                    {track.track_id}
-                  </span>
+                    <div className="font-bold border-b border-white/10 pb-0.5 mb-0.5">Debris ID-{String(track.track_id).padStart(3, '0')}</div>
+                    <div>Distance: {distMeters !== '—' ? `${distMeters} m` : '—'}</div>
+                    <div>Rel Speed: {velocityKmS !== '—' ? `${velocityKmS} km/s` : '—'}</div>
+                  </div>
+
+                  {isCritical && (
+                    <div className="absolute inset-x-0 -bottom-5 flex justify-center">
+                      <span className="bg-red-600 text-white text-[8px] px-1 font-bold animate-pulse">LOCK</span>
+                    </div>
+                  )}
                 </div>
               )
             })}

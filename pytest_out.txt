@@ -1,0 +1,98 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0 -- c:\Users\pushk\cubesat\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+hypothesis profile 'default'
+rootdir: C:\Users\pushk\cubesat
+plugins: anyio-4.12.1, hypothesis-6.151.9, asyncio-1.3.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 60 items
+
+tests/test_collision_probability.py::test_pc_zero_when_far PASSED        [  1%]
+tests/test_collision_probability.py::test_pc_high_when_close PASSED      [  3%]
+tests/test_collision_probability.py::test_pc_bounded PASSED              [  5%]
+tests/test_collision_probability.py::test_combine_covariances PASSED     [  6%]
+tests/test_detection.py::test_streak_detection_on_blank PASSED           [  8%]
+tests/test_detection.py::test_streak_detection_on_line_image PASSED      [ 10%]
+tests/test_detection.py::test_debris_detector_init PASSED                [ 11%]
+tests/test_detection.py::test_debris_detector_blank PASSED               [ 13%]
+tests/test_detection.py::test_iou_computation PASSED                     [ 15%]
+tests/test_detection.py::test_iou_non_overlapping PASSED                 [ 16%]
+tests/test_integration.py::test_schema_to_json_and_back PASSED           [ 18%]
+tests/test_integration.py::test_full_simulation_frame_pipeline PASSED    [ 20%]
+tests/test_integration.py::test_safe_flyby_no_critical_alert PASSED      [ 21%]
+tests/test_integration.py::test_queue_manager_drops_old PASSED           [ 23%]
+tests/test_integration.py::test_queue_manager_size PASSED                [ 25%]
+tests/test_integration.py::test_health_endpoint PASSED                   [ 26%]
+tests/test_prediction.py::test_coordinate_transform_center PASSED        [ 28%]
+tests/test_prediction.py::test_coordinate_transform_edge PASSED          [ 30%]
+tests/test_prediction.py::test_propagate_state PASSED                    [ 31%]
+tests/test_prediction.py::test_j2_perturbation_nonzero PASSED            [ 33%]
+tests/test_prediction.py::test_ukf_tracker_init PASSED                   [ 35%]
+tests/test_prediction.py::test_ukf_predict PASSED                        [ 36%]
+tests/test_prediction.py::test_ukf_update PASSED                         [ 38%]
+tests/test_prediction.py::test_tca_computation PASSED                    [ 40%]
+tests/test_preprocessing.py::test_dark_frame_subtraction PASSED          [ 41%]
+tests/test_preprocessing.py::test_clahe_enhancement PASSED               [ 43%]
+tests/test_preprocessing.py::test_hot_pixel_correction PASSED            [ 45%]
+tests/test_preprocessing.py::test_full_preprocess_pipeline PASSED        [ 46%]
+tests/test_preprocessing.py::test_background_update PASSED               [ 48%]
+tests/test_risk_assessor.py::test_no_alert_safe_distance PASSED          [ 50%]
+tests/test_risk_assessor.py::test_advisory_alert PASSED                  [ 51%]
+tests/test_risk_assessor.py::test_warning_alert PASSED                   [ 53%]
+tests/test_risk_assessor.py::test_critical_alert_pc PASSED               [ 55%]
+tests/test_risk_assessor.py::test_critical_alert_tca FAILED              [ 56%]
+tests/test_risk_assessor.py::test_alert_recommended_actions PASSED       [ 58%]
+tests/test_schemas.py::test_telemetry_packet_creation PASSED             [ 60%]
+tests/test_schemas.py::test_telemetry_packet_invalid PASSED              [ 61%]
+tests/test_schemas.py::test_image_frame_defaults PASSED                  [ 63%]
+tests/test_schemas.py::test_image_frame_custom_dimensions PASSED         [ 65%]
+tests/test_schemas.py::test_detection_event_types PASSED                 [ 66%]
+tests/test_schemas.py::test_risk_alert_levels PASSED                     [ 68%]
+tests/test_schemas.py::test_track_object_defaults PASSED                 [ 70%]
+tests/test_schemas.py::test_serialization_roundtrip PASSED               [ 71%]
+tests/test_simulation.py::test_star_field_shape PASSED                   [ 73%]
+tests/test_simulation.py::test_star_field_has_stars PASSED               [ 75%]
+tests/test_simulation.py::test_star_field_reproducible PASSED            [ 76%]
+tests/test_simulation.py::test_debris_object_update PASSED               [ 78%]
+tests/test_simulation.py::test_debris_render_returns_image PASSED        [ 80%]
+tests/test_simulation.py::test_noise_gaussian PASSED                     [ 81%]
+tests/test_simulation.py::test_noise_hot_pixels PASSED                   [ 83%]
+tests/test_simulation.py::test_telemetry_generator PASSED                [ 85%]
+tests/test_simulation.py::test_simulation_engine_frame PASSED            [ 86%]
+tests/test_simulation.py::test_simulation_engine_10_frames PASSED        [ 88%]
+tests/test_tracking.py::test_kalman_tracker_init PASSED                  [ 90%]
+tests/test_tracking.py::test_kalman_tracker_predict PASSED               [ 91%]
+tests/test_tracking.py::test_kalman_tracker_update PASSED                [ 93%]
+tests/test_tracking.py::test_sort_tracker_no_detections PASSED           [ 95%]
+tests/test_tracking.py::test_sort_tracker_single_detection PASSED        [ 96%]
+tests/test_tracking.py::test_sort_tracker_track_persistence PASSED       [ 98%]
+tests/test_tracking.py::test_sort_tracker_min_hits PASSED                [100%]
+
+================================== FAILURES ===================================
+___________________________ test_critical_alert_tca ___________________________
+tests\test_risk_assessor.py:67: in test_critical_alert_tca
+    assert alert is not None
+E   assert None is not None
+============================== warnings summary ===============================
+ingestion\api.py:114
+  C:\Users\pushk\cubesat\ingestion\api.py:114: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+.venv\Lib\site-packages\fastapi\applications.py:4599
+  c:\Users\pushk\cubesat\.venv\Lib\site-packages\fastapi\applications.py:4599: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_risk_assessor.py::test_critical_alert_tca - assert None is ...
+================== 1 failed, 59 passed, 2 warnings in 59.49s ==================
