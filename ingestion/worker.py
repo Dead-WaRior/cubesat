@@ -6,7 +6,6 @@ import logging
 import cv2
 import numpy as np
 import math
-from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 
 from ingestion.queue_manager import QueueManager

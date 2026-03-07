@@ -16,12 +16,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from ingestion.queue_manager import QueueManager
 from ingestion.database import CubeSatDatabase
 from ingestion.worker import ProcessingWorker
-from shared.schemas import ImageFrame, TelemetryPacket, RiskAlert, TrackObject
+from shared.schemas import ImageFrame, TelemetryPacket
 from vision.pipeline import VisionPipeline
 from prediction.pipeline import PredictionPipeline
-import base64
-import cv2
-import numpy as np
 
 logger = logging.getLogger(__name__)
 

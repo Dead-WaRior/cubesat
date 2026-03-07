@@ -177,7 +177,6 @@ class PredictionPipeline:
         from prediction.orbital_dynamics import propagate_state
         path = []
         dt = duration / (steps - 1)
-        current = sat_state.copy()
         for i in range(steps):
             t = i * dt
             # Propagate from original state to current offset
