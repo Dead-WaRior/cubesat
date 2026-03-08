@@ -108,30 +108,15 @@ async def get_alerts() -> list[dict[str, Any]]:
 # Background Processing
 # ---------------------------------------------------------------------------
 
-@app.on_event("startup")
-async def startup_event():
-    asyncio.create_task(worker.run_forever())
+from firebase_admin import db as rtdb
 
-# ---------------------------------------------------------------------------
-# WebSocket
-# ---------------------------------------------------------------------------
-
-_LIVE_PUSH_INTERVAL_S = 0.1  # 100 ms
-
-
-@app.websocket("/ws/live")
-async def websocket_live(websocket: WebSocket) -> None:
-    """Stream live system state to connected clients at ~10 Hz.
-
-    The server pushes a JSON message every 100 ms containing the latest frame
-    snapshot, active tracks, recent alerts, and subsystem health indicators.
-
-    Args:
-        websocket: The connected WebSocket client.
-    """
-    await websocket.accept()
-    logger.info("WebSocket client connected: %s", websocket.client)
+async def push_to_rtdb() -> None:
+    """Push live system state to Firebase Realtime Database at ~10 Hz."""
+    logger.info("Started pushing live data to Firebase RTDB")
+    
+    # Needs to be initialized somewhere, assuming caller or top of file does it.
     try:
+        ref = rtdb.reference('live')
         while True:
             payload: dict[str, Any] = {
                 "frame": worker.latest_frame_processed,
@@ -146,14 +131,25 @@ async def websocket_live(websocket: WebSocket) -> None:
                     "vision": "ok",
                     "prediction": "ok",
                 },
+                "timestamp": datetime.now(tz=timezone.utc).isoformat()
             }
-            await websocket.send_text(json.dumps(payload, default=str))
+            # Firebase Realtime DB does not support numpy types, json.dumps handles it 
+            # so we'd better convert to dict primitives first, or json dump then load.
+            json_payload = json.loads(json.dumps(payload, default=str))
+            ref.set(json_payload)
             await asyncio.sleep(_LIVE_PUSH_INTERVAL_S)
-    except WebSocketDisconnect:
-        logger.info("WebSocket client disconnected: %s", websocket.client)
-    except Exception:
-        logger.exception("Unexpected error in WebSocket handler")
-        await websocket.close()
+    except Exception as e:
+        logger.exception("Unexpected error in RTDB push loop: %s", e)
+
+@app.on_event("startup")
+async def startup_event():
+    import firebase_admin
+    if not firebase_admin._apps:
+        # User needs to set GOOGLE_APPLICATION_CREDENTIALS and FIREBASE_DATABASE_URL
+        # or it will pick up default credentials for emulator/default project.
+        firebase_admin.initialize_app()
+    asyncio.create_task(worker.run_forever())
+    asyncio.create_task(push_to_rtdb())
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,8 @@
+firebase-functions >= 0.1.0
+firebase-admin >= 6.0.0
+fastapi >= 0.100.0
+uvicorn >= 0.23.0
+pydantic >= 2.0.0
+numpy
+opencv-python-headless
+redis
