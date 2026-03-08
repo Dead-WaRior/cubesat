@@ -1,6 +1,6 @@
 # 🛰️ CubeSat AI-Based Real-Time Collision Prediction System
 
-A ground-based software platform that processes satellite camera imagery and telemetry data, detects nearby space debris, and predicts collision risks in near real time. The system uses a simulation layer that generates realistic synthetic orbital imagery and debris scenarios since live satellite feeds are not available during development.
+A ground-based software platform that processes satellite camera imagery and telemetry data, detects nearby space debris, and predicts collision risks NEAR real time. The system uses a simulation layer that generates realistic synthetic orbital imagery and debris scenarios since live satellite feeds  not available during development.
 
 ## Architecture Overview — 5-Layer Pipeline
 
