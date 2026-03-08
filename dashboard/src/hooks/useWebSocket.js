@@ -1,35 +1,17 @@
 import { useEffect, useRef, useCallback } from 'react'
 import useDashboardStore from '../store'
-
-/** WebSocket endpoint – uses the Vite proxy in development */
-const WS_URL = '/ws/live'
-
-/** Delay in milliseconds before attempting a reconnection */
-const RECONNECT_DELAY_MS = 2000
+import { database } from '../firebase'
+import { ref, onValue, off } from "firebase/database"
 
 /**
- * useWebSocket
+ * useWebSocket (now useFirebaseDatabase)
  *
- * Custom hook that maintains a live WebSocket connection to the CubeSat
- * backend.  On every inbound JSON message the relevant Zustand store
- * actions are called to keep the UI in sync.
+ * Custom hook that maintains a live connection to the CubeSat Firebase Realtime Database.
+ * On every inbound JSON message the relevant Zustand store actions are called to keep the UI in sync.
  *
- * Expected server message shape (all fields optional):
- * ```json
- * {
- *   "frame":        "<base64 data URI>",
- *   "tracks":       [ { track_id, x, y, vx, vy, pc, alert_level, tca_min, age_frames, confidence, bbox } ],
- *   "alerts":       [ { alert_id, track_id, alert_level, pc, miss_distance_km, tca_min, recommended_action, timestamp } ],
- *   "system_health": { "simulation": "ok", "ingestion": "ok", "vision": "ok", "prediction": "ok" },
- *   "timestamp":    "<ISO 8601>"
- * }
- * ```
- *
- * @returns {{ isConnected: boolean }}
+ * Expected server message shape is the same as before, but read from Firebase Realtime Database.
  */
 function useWebSocket() {
-  const wsRef = useRef(null)
-  const reconnectTimerRef = useRef(null)
   const isMountedRef = useRef(true)
 
   const setFrame = useDashboardStore((s) => s.setFrame)
@@ -48,41 +30,16 @@ function useWebSocket() {
   const connect = useCallback(() => {
     if (!isMountedRef.current) return
 
-    // Use location.host which includes the port (e.g. localhost:3000)
-    // The Vite proxy in vite.config.js will redirect /ws/live to localhost:8000
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const url = `${protocol}//${window.location.host}${WS_URL}`
+    setConnected(true)
 
-    const ws = new WebSocket(url)
-    wsRef.current = ws
-
-    ws.onopen = () => {
+    const liveDataRef = ref(database, 'live')
+    
+    // Listen to changes in the 'live' node
+    onValue(liveDataRef, (snapshot) => {
       if (!isMountedRef.current) return
-      setConnected(true)
-    }
-
-    ws.onclose = () => {
-      if (!isMountedRef.current) return
-      setConnected(false)
-      // Schedule reconnect
-      reconnectTimerRef.current = setTimeout(connect, RECONNECT_DELAY_MS)
-    }
-
-    ws.onerror = () => {
-      // onclose fires after onerror, so reconnect is handled there
-      ws.close()
-    }
-
-    ws.onmessage = (event) => {
-      if (!isMountedRef.current) return
-
-      let data
-      try {
-        data = JSON.parse(event.data)
-      } catch {
-        // Silently ignore malformed messages
-        return
-      }
+      
+      const data = snapshot.val()
+      if (!data) return
 
       if (data.frame !== undefined) setFrame(data.frame)
 
@@ -144,7 +101,10 @@ function useWebSocket() {
       if (data.sat_bus_stats) {
         setSatBusStats(data.sat_bus_stats)
       }
-    }
+    }, (error) => {
+        console.error("Firebase DB Error", error)
+        setConnected(false)
+    })
   }, [
     setFrame,
     setTracks,
@@ -165,17 +125,11 @@ function useWebSocket() {
 
     return () => {
       isMountedRef.current = false
-      clearTimeout(reconnectTimerRef.current)
-      if (wsRef.current) {
-        // Remove onclose before closing so we don't schedule a reconnect
-        wsRef.current.onclose = null
-        wsRef.current.close()
-      }
+      const liveDataRef = ref(database, 'live')
+      off(liveDataRef)
       setConnected(false)
     }
-    // connect is wrapped in useCallback so it has a stable reference;
-    // the empty array is intentional — we only want to open the socket once.
-  }, [])
+  }, [connect])
 
   return { isConnected }
 }

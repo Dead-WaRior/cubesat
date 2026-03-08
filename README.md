@@ -1,6 +1,6 @@
 # 🛰️ CubeSat AI-Based Real-Time Collision Prediction System
 
-A ground-based software platform that processes satellite camera imagery and telemetry data, detects nearby space debris, and predicts collision risks near real time. The system uses a simulation layer that generates realistic synthetic orbital imagery and debris scenarios since live satellite feeds  not available during development.
+A ground-based software platform that processes satellite camera imagery and telemetry data, detects nearby space debris, and predicts collision risks NEAR real time. The system uses a simulation layer that generates realistic synthetic orbital imagery and debris scenarios since live satellite feeds  not available during development.
 
 ## Architecture Overview — 5-Layer Pipeline
 
@@ -13,6 +13,13 @@ A ground-based software platform that processes satellite camera imagery and tel
 | 5 | Dashboard & Alerts | Real-time 3D orbital display, risk scores, ground track, operator alerts | React, Three.js, WebSocket, Recharts |
 
 **Data Flow:** `Simulation → Redis Queue → Detector → Tracker → Predictor → Risk Scorer → Dashboard`
+
+## Models Used
+
+- **Detection:** YOLOv8-nano (`vision/yolo_config.yaml`, `model: yolov8n.pt`) for debris detection.
+- **Tracking:** SORT with a constant-velocity Kalman filter (`vision/sort_tracker.py`) for multi-object tracking.
+- **Prediction:** Unscented Kalman Filter (UKF) (`prediction/ukf_tracker.py`) for trajectory estimation.
+- **Fallback:** OpenCV `SimpleBlobDetector` (`vision/object_detector.py`) is used when YOLO weights are unavailable.
 
 ## Repository Structure
 
