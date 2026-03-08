@@ -28,3 +28,4 @@ htmlcov/
 .ipynb_checkpoints/
 .DS_Store
 Thumbs.db
+dashboard/src/firebase.js
