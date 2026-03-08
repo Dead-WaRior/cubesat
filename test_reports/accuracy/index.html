@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CubeSat | Model Accuracy Insights</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #07080c;
+            --bg-card: rgba(15, 16, 25, 0.8);
+            --accent-glow: #3b82f6;
+            --accent-secondary: #ec4899;
+            --text-main: #f1f5f9;
+            --text-dim: #64748b;
+            --success: #22c55e;
+            --warning: #eab308;
+            --danger: #ef4444;
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at top right, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at bottom left, rgba(236, 72, 153, 0.08) 0%, transparent 40%);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 3rem 2rem;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        header {
+            margin-bottom: 4rem;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #fff 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 2rem;
+            padding: 2.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--accent-glow);
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--accent-glow);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .kpi-title { color: var(--text-dim); font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; }
+        .kpi-value { font-size: 3rem; font-weight: 700; line-height: 1; margin-bottom: 0.5rem; }
+        .kpi-trend { font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem; }
+        .trend-up { color: var(--success); }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 2.5rem;
+            margin-bottom: 4rem;
+        }
+
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 2.5rem;
+            padding: 3rem;
+            backdrop-filter: blur(20px);
+        }
+
+        .panel-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .panel-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--glass-border);
+        }
+
+        .accuracy-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .accuracy-table th {
+            text-align: left;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            padding: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .accuracy-table td {
+            padding: 1.25rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.95rem;
+        }
+
+        .model-tag {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent-glow);
+            padding: 0.3rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 99px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-glow), var(--accent-secondary));
+            border-radius: 99px;
+        }
+
+        .chart-wrap { height: 350px; position: relative; }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        .live-indicator {
+            width: 10px; height: 10px;
+            background: var(--success);
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @media (max-width: 1100px) {
+            .main-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <p>Detection & Tracking Performance</p>
+            <h1>Model Accuracy Dashboard</h1>
+        </header>
+
+        <div class="kpi-row">
+            <div class="kpi-card">
+                <div class="kpi-title">Mean Average Precision (mAP)</div>
+                <div class="kpi-value">0.822</div>
+                <div class="kpi-trend trend-up">↑ 4.2% from prev release</div>
+            </div>
+            <div class="kpi-card" style="--accent-glow: var(--accent-secondary)">
+                <div class="kpi-title">Tracking RMSE</div>
+                <div class="kpi-value">15.22m</div>
+                <div class="kpi-trend" style="color: var(--success)">↓ Improved by 2.1m</div>
+            </div>
+            <div class="kpi-card" style="--accent-glow: var(--success)">
+                <div class="kpi-title">Global Recall</div>
+                <div class="kpi-value">91.4%</div>
+                <div class="kpi-trend trend-up">↑ High consistency</div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="panel">
+                <div class="panel-title">Model-Specific Accuracy Metrics</div>
+                <table class="accuracy-table">
+                    <tr>
+                        <th>Model Pipeline</th>
+                        <th>Core Metric</th>
+                        <th>Score</th>
+                        <th>Status</th>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="model-tag">YOLOv8</span>
+                            <div style="font-size: 0.8rem; margin-top: 0.4rem; color: var(--text-dim)">Debris Object Detection</div>
+                        </td>
+                        <td>
+                            F1-Score
+                            <div class="progress-bar"><div class="progress-fill" style="width: 86%"></div></div>
+                        </td>
+                        <td style="font-weight: 600">0.86</td>
+                        <td style="color: var(--success)">OPTIMAL</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="model-tag">SORT (Kalman)</span>
+                            <div style="font-size: 0.8rem; margin-top: 0.4rem; color: var(--text-dim)">ID Continuity</div>
+                        </td>
+                        <td>
+                            MOTA
+                            <div class="progress-bar"><div class="progress-fill" style="width: 79%"></div></div>
+                        </td>
+                        <td style="font-weight: 600">0.79</td>
+                        <td style="color: var(--success)">HIGH</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="model-tag">UKF Tracker</span>
+                            <div style="font-size: 0.8rem; margin-top: 0.4rem; color: var(--text-dim)">Trajectory Estimation</div>
+                        </td>
+                        <td>
+                            Cov Trace
+                            <div class="progress-bar"><div class="progress-fill" style="width: 94%"></div></div>
+                        </td>
+                        <td style="font-weight: 600">1.2e-4</td>
+                        <td style="color: var(--success)">STABLE</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="model-tag">Risk Assessor</span>
+                            <div style="font-size: 0.8rem; margin-top: 0.4rem; color: var(--text-dim)">Collision Sensitivity</div>
+                        </td>
+                        <td>
+                            AUC-ROC
+                            <div class="progress-bar"><div class="progress-fill" style="width: 95%"></div></div>
+                        </td>
+                        <td style="font-weight: 600">0.957</td>
+                        <td style="color: var(--warning)">DEGRADED</td>
+                    </tr>
+                </table>
+                <p style="margin-top: 1.5rem; color: var(--text-dim); font-size: 0.85rem;">
+                    * Risk Assessor status marked as <span style="color: var(--warning)">DEGRADED</span> due to failure in <code>test_critical_alert_tca</code>.
+                </p>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Tracking Error Distribution</div>
+                <div class="chart-wrap">
+                    <canvas id="errorChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">Fidelity Over Time</div>
+            <div class="chart-wrap">
+                <canvas id="fidelityChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Error Distribution Chart
+        const errorCtx = document.getElementById('errorChart').getContext('2d');
+        new Chart(errorCtx, {
+            type: 'radar',
+            data: {
+                labels: ['Position X', 'Position Y', 'Position Z', 'Velocity VX', 'Velocity VY', 'Velocity VZ'],
+                datasets: [{
+                    label: 'Error (Normalized)',
+                    data: [0.15, 0.12, 0.45, 0.22, 0.18, 0.31],
+                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                    borderColor: '#3b82f6',
+                    pointBackgroundColor: '#3b82f6',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(255,255,255,0.1)' },
+                        grid: { color: 'rgba(255,255,255,0.1)' },
+                        pointLabels: { color: '#64748b', font: { family: 'Outfit', size: 12 } },
+                        ticks: { display: false }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Fidelity Chart
+        const fidelityCtx = document.getElementById('fidelityChart').getContext('2d');
+        new Chart(fidelityCtx, {
+            type: 'line',
+            data: {
+                labels: ['Frame 0', 'Frame 10', 'Frame 20', 'Frame 30', 'Frame 40', 'Frame 50', 'Frame 60'],
+                datasets: [{
+                    label: 'Detection Accuracy',
+                    data: [0.75, 0.78, 0.81, 0.85, 0.84, 0.86, 0.86],
+                    borderColor: '#3b82f6',
+                    background: 'transparent',
+                    tension: 0.4,
+                    borderWidth: 4,
+                    pointRadius: 0
+                }, {
+                    label: 'Tracking Fidelity',
+                    data: [0.65, 0.72, 0.85, 0.88, 0.92, 0.94, 0.95],
+                    borderColor: '#ec4899',
+                    background: 'transparent',
+                    tension: 0.4,
+                    borderWidth: 4,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { color: '#94a3b8', font: { family: 'Outfit' }, usePointStyle: true }
+                    }
+                },
+                scales: {
+                    y: { 
+                        min: 0.5, max: 1.0,
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: '#64748b' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#64748b' }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

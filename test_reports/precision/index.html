@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CubeSat | Test Precision Analytics</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      :root {
+        --bg-dark: #0a0b10;
+        --bg-card: rgba(20, 22, 32, 0.7);
+        --accent-primary: #4f46e5;
+        --accent-secondary: #06b6d4;
+        --text-main: #e2e8f0;
+        --text-dim: #94a3b8;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --glass-border: rgba(255, 255, 255, 0.1);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Outfit", sans-serif;
+        background-color: var(--bg-dark);
+        background-image:
+          radial-gradient(
+            circle at 20% 20%,
+            rgba(79, 70, 229, 0.05) 0%,
+            transparent 40%
+          ),
+          radial-gradient(
+            circle at 80% 80%,
+            rgba(6, 182, 212, 0.05) 0%,
+            transparent 40%
+          );
+        color: var(--text-main);
+        line-height: 1.6;
+        min-height: 100vh;
+        padding: 2rem;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 3rem;
+        border-bottom: 1px solid var(--glass-border);
+        padding-bottom: 1.5rem;
+      }
+
+      .logo-section h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(to right, #fff, #94a3b8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -0.02em;
+      }
+
+      .logo-section p {
+        color: var(--text-dim);
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+      }
+
+      .status-badge {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        padding: 0.5rem 1.25rem;
+        border-radius: 99px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .status-badge::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        background: var(--danger);
+        border-radius: 50%;
+        display: inline-block;
+        box-shadow: 0 0 10px var(--danger);
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+      }
+
+      .stat-card {
+        background: var(--bg-card);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--glass-border);
+        padding: 1.5rem;
+        border-radius: 1.5rem;
+        transition:
+          transform 0.3s ease,
+          border-color 0.3s ease;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .stat-label {
+        color: var(--text-dim);
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+
+      .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+      }
+
+      .charts-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
+        margin-bottom: 3rem;
+      }
+
+      .chart-container {
+        background: var(--bg-card);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--glass-border);
+        padding: 2rem;
+        border-radius: 1.5rem;
+        height: 400px;
+      }
+
+      .chart-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .test-list {
+        background: var(--bg-card);
+        border: 1px solid var(--glass-border);
+        border-radius: 1.5rem;
+        padding: 2rem;
+        margin-bottom: 3rem;
+      }
+
+      .test-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .test-item:last-child {
+        border-bottom: none;
+      }
+
+      .test-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .test-name {
+        font-weight: 500;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.9rem;
+      }
+
+      .test-status {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 99px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .test-status.passed {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success);
+      }
+
+      .test-status.failed {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger);
+      }
+
+      .log-viewer {
+        background: #000;
+        border: 1px solid var(--glass-border);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.85rem;
+        color: #d1d5db;
+        overflow-x: auto;
+        max-height: 400px;
+      }
+
+      .log-fail {
+        color: var(--danger);
+        font-weight: 600;
+      }
+      .log-pass {
+        color: var(--success);
+      }
+
+      @media (max-width: 1024px) {
+        .charts-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div class="logo-section">
+          <p>Mission Intelligence</p>
+          <h1>Test Precision Analytics</h1>
+        </div>
+        <div class="status-badge">Attention Required: 1 Failure</div>
+      </header>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">System Integrity</div>
+          <div class="stat-value" style="color: var(--warning)">98.3%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Tests Performed</div>
+          <div class="stat-value">60</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Avg Vision IoU</div>
+          <div class="stat-value" style="color: var(--accent-secondary)">
+            0.84
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Covariance Trace (Avg)</div>
+          <div class="stat-value">1.2e-4</div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-container">
+          <div class="chart-title">Detection IoU Distribution</div>
+          <canvas id="iouChart"></canvas>
+        </div>
+        <div class="chart-container">
+          <div class="chart-title">Risk Alert Distribution</div>
+          <canvas id="riskChart"></canvas>
+        </div>
+      </div>
+
+      <div class="test-list">
+        <div class="chart-title">Critical Test Results</div>
+
+        <div class="test-item">
+          <div class="test-info">
+            <span class="test-status failed">Failed</span>
+            <span class="test-name"
+              >tests/test_risk_assessor.py::test_critical_alert_tca</span
+            >
+          </div>
+          <div style="color: var(--danger); font-size: 0.8rem">
+            Assertion Error: None is not None
+          </div>
+        </div>
+
+        <div class="test-item">
+          <div class="test-info">
+            <span class="test-status passed">Passed</span>
+            <span class="test-name"
+              >tests/test_collision_probability.py::test_pc_high_when_close</span
+            >
+          </div>
+        </div>
+
+        <div class="test-item">
+          <div class="test-info">
+            <span class="test-status passed">Passed</span>
+            <span class="test-name"
+              >tests/test_prediction.py::test_ukf_update</span
+            >
+          </div>
+        </div>
+
+        <div class="test-item">
+          <div class="test-info">
+            <span class="test-status passed">Passed</span>
+            <span class="test-name"
+              >tests/test_integration.py::test_full_simulation_frame_pipeline</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-title">Diagnostic Test Output</div>
+      <div class="log-viewer">
+        <div class="log-pass">
+          tests/test_risk_assessor.py::test_warning_alert PASSED [ 53%]
+        </div>
+        <div class="log-pass">
+          tests/test_risk_assessor.py::test_critical_alert_pc PASSED [ 55%]
+        </div>
+        <div class="log-fail">
+          tests/test_risk_assessor.py::test_critical_alert_tca FAILED [ 56%]
+        </div>
+        <div class="log-pass">
+          tests/test_risk_assessor.py::test_alert_recommended_actions PASSED [
+          58%]
+        </div>
+        <div style="margin-top: 1rem">E assert None is not None</div>
+        <div style="color: var(--text-dim)">
+          tests\test_risk_assessor.py:67: in test_critical_alert_tca
+        </div>
+        <div style="color: var(--text-dim)">assert alert is not None</div>
+      </div>
+    </div>
+
+    <script>
+      // Detection IoU Chart
+      const iouCtx = document.getElementById("iouChart").getContext("2d");
+      new Chart(iouCtx, {
+        type: "bar",
+        data: {
+          labels: ["0.0-0.2", "0.2-0.4", "0.4-0.6", "0.6-0.8", "0.8-1.0"],
+          datasets: [
+            {
+              label: "Detection Frequency",
+              data: [2, 5, 12, 28, 45],
+              backgroundColor: "rgba(79, 70, 229, 0.6)",
+              borderColor: "#4f46e5",
+              borderWidth: 1,
+              borderRadius: 8,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: "rgba(255,255,255,0.05)" },
+              border: { display: false },
+            },
+            x: { grid: { display: false }, border: { display: false } },
+          },
+        },
+      });
+
+      // Risk Alert Distribution Chart
+      const riskCtx = document.getElementById("riskChart").getContext("2d");
+      new Chart(riskCtx, {
+        type: "doughnut",
+        data: {
+          labels: ["Safe", "Advisory", "Warning", "Critical"],
+          datasets: [
+            {
+              data: [150, 45, 12, 5],
+              backgroundColor: [
+                "rgba(16, 185, 129, 0.6)",
+                "rgba(6, 182, 212, 0.6)",
+                "rgba(245, 158, 11, 0.6)",
+                "rgba(239, 68, 68, 0.6)",
+              ],
+              borderWidth: 0,
+              hoverOffset: 15,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "right",
+              labels: {
+                color: "#94a3b8",
+                font: { family: "Outfit", size: 12 },
+                usePointStyle: true,
+                padding: 20,
+              },
+            },
+          },
+          cutout: "70%",
+        },
+      });
+    </script>
+  </body>
+</html>
