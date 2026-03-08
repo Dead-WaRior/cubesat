@@ -14,6 +14,13 @@ A ground-based software platform that processes satellite camera imagery and tel
 
 **Data Flow:** `Simulation → Redis Queue → Detector → Tracker → Predictor → Risk Scorer → Dashboard`
 
+## Models Used
+
+- **Detection:** YOLOv8-nano (`vision/yolo_config.yaml`, `model: yolov8n.pt`) for debris detection.
+- **Tracking:** SORT with a constant-velocity Kalman filter (`vision/sort_tracker.py`) for multi-object tracking.
+- **Prediction:** Unscented Kalman Filter (UKF) (`prediction/ukf_tracker.py`) for trajectory estimation.
+- **Fallback:** OpenCV `SimpleBlobDetector` (`vision/object_detector.py`) is used when YOLO weights are unavailable.
+
 ## Repository Structure
 
 ```
