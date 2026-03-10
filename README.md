@@ -155,13 +155,6 @@ python simulation/run.py --scenario close_approach --frames 100 --output-dir /tm
 python simulation/run.py --scenario safe_flyby --redis
 ```
 
-## Alert Tier System
-
-| Level | Condition | Color | Action |
-|-------|-----------|-------|--------|
-| ADVISORY | Pc > 1e-5 or range < 10 km | 🟡 Yellow | Monitoring frequency increased |
-| WARNING | Pc > 1e-4 or range < 5 km | 🟠 Orange | Operator reviews maneuver recommendation |
-| CRITICAL | Pc > 1e-3 or TCA < 15 min | 🔴 Red | Immediate action required |
 
 ## API Endpoints
 
